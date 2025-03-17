@@ -1,0 +1,351 @@
+import React, {useState, useEffect, useContext} from "react";
+import { View, Text, Image, TouchableOpacity, StyleSheet, Linking, ScrollView, ActivityIndicator } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import Icon from "react-native-vector-icons/Ionicons";
+import { BibleContext, useBible } from "../context/BibleContext"; // Importamos el contexto
+
+// Diccionario para traducir nombres de libros
+const bookTranslations: Record<string, string> = {
+  "Genesis": "Génesis",
+  "Exodus": "Éxodo",
+  "Leviticus": "Levítico",
+  "Numbers": "Números",
+  "Deuteronomy": "Deuteronomio",
+  "Joshua": "Josué",
+  "Judges": "Jueces",
+  "Ruth": "Rut",
+  "1-Samuel": "1 Samuel",
+  "2-Samuel": "2 Samuel",
+  "1-Kings": "1 Reyes",
+  "2-Kings": "2 Reyes",
+  "1-Chronicles": "1 Crónicas",
+  "2-Chronicles": "2 Crónicas",
+  "Ezra": "Esdras",
+  "Nehemiah": "Nehemías",
+  "Esther": "Ester",
+  "Job": "Job",
+  "Psalms": "Salmos",
+  "Proverbs": "Proverbios",
+  "Ecclesiastes": "Eclesiastés",
+  "Song-of-Solomon": "Cantares",
+  "Isaiah": "Isaías",
+  "Jeremiah": "Jeremías",
+  "Lamentations": "Lamentaciones",
+  "Ezekiel": "Ezequiel",
+  "Daniel": "Daniel",
+  "Hosea": "Oseas",
+  "Joel": "Joel",
+  "Amos": "Amós",
+  "Obadiah": "Abdías",
+  "Jonah": "Jonás",
+  "Micah": "Miqueas",
+  "Nahum": "Nahum",
+  "Habakkuk": "Habacuc",
+  "Zephaniah": "Sofonías",
+  "Haggai": "Hageo",
+  "Zechariah": "Zacarías",
+  "Malachi": "Malaquías",
+  "Matthew": "Mateo",
+  "Mark": "Marcos",
+  "Luke": "Lucas",
+  "John": "Juan",
+  "Acts": "Hechos",
+  "Romans": "Romanos",
+  "1-Corinthians": "1 Corintios",
+  "2-Corinthians": "2 Corintios",
+  "Galatians": "Gálatas",
+  "Ephesians": "Efesios",
+  "Philippians": "Filipenses",
+  "Colossians": "Colosenses",
+  "1-Thessalonians": "1 Tesalonicenses",
+  "2-Thessalonians": "2 Tesalonicenses",
+  "1-Timothy": "1 Timoteo",
+  "2-Timothy": "2 Timoteo",
+  "Titus": "Tito",
+  "Philemon": "Filemón",
+  "Hebrews": "Hebreos",
+  "James": "Santiago",
+  "1-Peter": "1 Pedro",
+  "2-Peter": "2 Pedro",
+  "1-John": "1 Juan",
+  "2-John": "2 Juan",
+  "3-John": "3 Juan",
+  "Jude": "Judas",
+  "Revelation": "Apocalipsis"
+};
+
+const HomeScreen = () => {
+  const [verse, setVerse] = useState(null);
+  const [reference, setReference] = useState(null);
+  const [bookDaily, setBookDaily] = useState(null);
+  const [bookDailyEn, setBookDailyEn] = useState(null); // Nuevo estado para guardar el nombre del libro en inglés
+  const [chapterDaily, setChapterDaily] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const navigation = useNavigation();
+
+  const { book, setBook, chapter, setChapter } = useBible(); // Obtenemos el estado del contexto
+
+
+  useEffect(() => {
+    const fetchDailyVerse = async () => {
+      try {
+        const dailyVerse = await getVerseFromOurManna();
+        if (!dailyVerse) throw new Error("No se pudo obtener el versículo en inglés.");
+
+        const { book: bookEn, chapter, verseNum, fullReference } = extractVerseDetails(dailyVerse.reference);
+
+        setBookDailyEn(bookEn);
+        
+        const spanishVerse = await getVerseInSpanish(bookEn, chapter, verseNum);
+        if (!spanishVerse) throw new Error("No se pudo obtener el versículo en español.");
+
+        // Traducir el nombre del libro al español
+        const bookEs = bookTranslations[bookEn] || bookEn;
+
+        setVerse(spanishVerse);
+        setReference(`${bookEs} ${chapter}:${verseNum}`);
+        setBookDaily(bookEs);
+        setChapterDaily(chapter);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDailyVerse();
+  }, []);
+
+  // 🔹 Obtiene el versículo diario desde OurManna
+  const getVerseFromOurManna = async () => {
+    const response = await fetch("https://beta.ourmanna.com/api/v1/get/?format=json&order=daily");
+    const data = await response.json();
+    return data.verse.details;
+  };
+
+  // 🔹 Extrae los detalles del versículo (libro, capítulo y versículo)
+  const extractVerseDetails = (reference: string) => {
+    const match = reference.match(/^([\d]*\s?[A-Za-z\s]+)\s(\d+):(\d+)$/);
+    if (!match) throw new Error("Formato de referencia no válido");
+
+    let book = match[1].trim();
+    const chapter = match[2];
+    const verseNum = match[3];
+
+    // Si el libro comienza con un número (1, 2, 3), agregamos un guion
+    if (/^\d/.test(book)) {
+      book = book.replace(" ", "-");
+    }
+
+    return { book, chapter, verseNum, fullReference: `${book} ${chapter}:${verseNum}` };
+  };
+
+  // 🔹 Obtiene el versículo en español desde la API
+const getVerseInSpanish = async (book: string, chapter: string, verseNum: string) => {
+  const response = await fetch(`https://bible-api.deno.dev/api/read/rv1960/${book}/${chapter}/${verseNum}`);
+  const data = await response.json();
+  return data.verse;
+};
+
+
+  return (
+    <View style={styles.container}>
+      {/* Botón de perfil flotante */}
+      <TouchableOpacity 
+        style={styles.profileIcon} 
+        onPress={() => navigation.navigate("ProfileScreen")}
+      >
+        <Icon name="person-circle-outline" size={40} color="#333" />
+      </TouchableOpacity>
+
+      <Text style={styles.textHeader}>¡Hola, Juan!</Text>
+
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        {/* Logo */}
+        <Image source={require("../../assets/img/870.jpg")} style={styles.logo} />
+
+        {/* Card de Bienvenida */}
+        <View style={styles.card}>
+          <Text style={styles.welcomeText}>¡Bienvenido a la App de Verdad y Vida Radio!</Text>
+          <Text style={styles.subtitle}>Conéctate con la mejor música y mensajes inspiradores.</Text>
+
+          {/* Botón para escuchar en vivo */}
+          <TouchableOpacity style={styles.button} onPress={() => navigation.navigate("RadioScreen")}> 
+            <Text style={styles.buttonText}>🎧 Escuchar en Vivo</Text>
+          </TouchableOpacity>
+
+          {/* Último Devocional */}
+          <TouchableOpacity style={styles.buttonSecondary} onPress={() => navigation.navigate("DevotionalScreen")}> 
+            <Text style={styles.buttonText}>📖 Último Devocional</Text>
+          </TouchableOpacity>
+
+          {/* Biblia */}
+          <TouchableOpacity style={styles.buttonSecondary} onPress={() => navigation.navigate("BibleScreen")}> 
+            <Text style={styles.buttonText}>📖 Biblia</Text>
+          </TouchableOpacity>
+        </View>
+        
+        {/* Card de Versículo Diario */}
+        <View style={styles.card}>
+          {loading ? (
+            <ActivityIndicator size="large" color="#007AFF" />
+          ) : verse ? (
+            <>
+              <Text style={styles.verseText}>📖 {verse}</Text>
+              <Text style={styles.referenceText}>{reference}</Text>
+
+              {/* Botón para leer el capítulo completo usando el Context */}
+              <TouchableOpacity 
+                style={styles.button}
+                onPress={() => {
+                  if (bookDailyEn && chapterDaily) {
+                    setBook(bookDailyEn);
+                    setChapter(chapterDaily);
+                    navigation.navigate("Biblia");
+                  }
+                }}
+              >
+                <Text style={styles.buttonText}>Leer capítulo completo</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <Text style={styles.errorText}>No se pudo cargar el versículo.</Text>
+          )}
+        </View>
+
+        {/* Card de Redes Sociales */}
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Conéctate con Nosotros</Text>
+          <View style={styles.socialButtons}>
+            <TouchableOpacity onPress={() => Linking.openURL("https://facebook.com/verdadyvidaradio")}>
+              <Text style={styles.socialText}><Icon name="logo-facebook" size={22} color="#3B5998" /> Facebook</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => Linking.openURL("https://youtube.com/verdadyvidaradio")}>
+              <Text style={styles.socialText}><Icon name="logo-youtube" size={22} color="#ff0000" /> YouTube</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </ScrollView>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    paddingTop: 60,
+  },
+  scrollContainer: {
+    top: 20,
+    alignItems: "center",
+    paddingBottom: 80,
+  },
+  profileIcon: {
+    position: "absolute",
+    top: 6,
+    right: 20,
+    zIndex: 10,
+    borderRadius: 20,
+    padding: 5,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+  },
+  textHeader: {
+    position: "absolute",
+    top: 14,
+    fontSize: 20,
+    fontWeight: "bold",
+    left: 20,
+    color: "#333",
+  },
+  logo: {
+    width: 250,
+    height: 250,
+    marginBottom: 20,
+    borderRadius: 20,
+  },
+  card: {
+    backgroundColor: "#fff",
+    padding: 20,
+    borderRadius: 15,
+    width: "90%",
+    alignItems: "center",
+    marginBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+  },
+  welcomeText: {
+    fontSize: 22,
+    fontWeight: "bold",
+    textAlign: "center",
+    marginBottom: 10,
+    color: "#333",
+  },
+  subtitle: {
+    fontSize: 16,
+    textAlign: "center",
+    marginBottom: 20,
+    color: "gray",
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    textAlign: "center",
+    marginBottom: 10,
+  },
+  verseText: {
+    fontSize: 16,
+    fontStyle: "italic",
+    textAlign: "center",
+    marginBottom: 5,
+  },
+  verseReference: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#007AFF",
+  },
+  button: {
+    backgroundColor: "#333",
+    padding: 15,
+    borderRadius: 10,
+    width: "80%",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  buttonSecondary: {
+    backgroundColor: "#333",
+    padding: 15,
+    borderRadius: 10,
+    width: "80%",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  buttonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  socialButtons: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    width: "100%",
+  },
+  socialText: {
+    fontSize: 16,
+    color: "#333",
+  },
+  referenceText: {
+    fontSize: 14,
+    fontWeight: "bold",
+    marginTop: 5,
+    marginBottom: 15,
+  },
+  errorText: {
+    fontSize: 14,
+    color: "red",
+  },
+});
+
+export default HomeScreen;

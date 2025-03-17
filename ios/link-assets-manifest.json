@@ -1,0 +1,21 @@
+{
+  "migIndex": 1,
+  "data": [
+    {
+      "path": "assets/fonts/SpaceMono-Regular.ttf",
+      "sha1": "fae3a5a43b50e0408fd61e14383d94a023d332b0"
+    },
+    {
+      "path": "assets/fonts/UntitledSerif-Bold.otf",
+      "sha1": "3f7d122b687136ed6cb9a0fe91e1e702b5491482"
+    },
+    {
+      "path": "assets/fonts/UntitledSerif-Medium.otf",
+      "sha1": "437aa7e019caa66366af4217f4ce27f6800c4ee8"
+    },
+    {
+      "path": "assets/fonts/UntitledSerif-Regular.otf",
+      "sha1": "72e97bf855b4f83d4b2c1500a9df274ae748c211"
+    }
+  ]
+}
