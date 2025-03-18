@@ -4,7 +4,9 @@ import BibleScreen from "../screens/BibleScreen";
 import BookSelectionScreen from "../screens/BookSelectionScreen";
 import ChapterSelectionScreen from "../screens/ChapterSelectionScreen";
 import VersionSelectionScreen from "../screens/VersionSelectionScreen";
+
 import ProfileScreen from "../screens/ProfileScreen";
+import DevotionalDetail from "../screens/DevotionalDetailScreen";
 
 const Stack = createStackNavigator();
 
@@ -16,6 +18,7 @@ const BibleStack = () => {
       <Stack.Screen name="ChapterSelectionScreen" component={ChapterSelectionScreen} />
       <Stack.Screen name="VersionSelectionScreen" component={VersionSelectionScreen} />
       <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
+      <Stack.Screen name="DevotionalDetailScreen" component={DevotionalDetail} />
     </Stack.Navigator>
   );
 };

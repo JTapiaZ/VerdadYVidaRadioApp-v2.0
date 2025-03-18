@@ -8,9 +8,9 @@ import Icon from "react-native-vector-icons/Ionicons";
 import HomeScreen from "../screens/HomeScreen";
 import RadioScreen from "../screens/RadioScreen";
 import DevotionalsScreen from "../screens/DevotionalsScreen";
-import BibleScreen from "../screens/BibleScreen";
 import MoreScreen from "../screens/MoreScreen";
 import BibleStack from "./BibleNavigation";
+import DevotionalStack from "./DevotionalNavigation";
 
 // Definimos los tipos de las rutas
 type RootTabParamList = {
@@ -59,7 +59,7 @@ const BottomTabNavigator = () => {
     >
       <Tab.Screen name="Inicio" component={HomeScreen} />
       <Tab.Screen name="Radio" component={RadioScreen} />
-      <Tab.Screen name="Devocionales" component={DevotionalsScreen} />
+      <Tab.Screen name="Devocionales" component={DevotionalStack} />
       <Tab.Screen name="Biblia" component={BibleStack} />
       <Tab.Screen name="Más" component={MoreScreen} />
     </Tab.Navigator>
