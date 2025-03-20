@@ -20,7 +20,7 @@ const MoreScreen = () => {
       {/* Contenido */}
       <ScrollView contentContainerStyle={styles.content} style={{ flex: 1 }}>
         {/* Sección de Acciones */}
-        <TouchableOpacity style={styles.item} onPress={() => navigation.navigate("DonateScreen") }>
+        <TouchableOpacity style={styles.item} onPress={() => navigation.navigate("ProfileScreen") }>
           <Icon name="person-circle-outline" size={35} color="#555" style={styles.icon} />
           <Text style={styles.itemText}>Juan José Tapias Pinzón</Text>
         </TouchableOpacity>

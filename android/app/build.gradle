@@ -117,6 +117,8 @@ dependencies {
     implementation platform('com.google.firebase:firebase-bom:33.10.0')
     implementation 'com.google.firebase:firebase-messaging'
 
+    implementation project(':react-native-video')
+
     // Agrega los servicios de Firebase que necesitas
     implementation 'com.google.firebase:firebase-analytics'
     implementation 'com.google.firebase:firebase-messaging' // Notificaciones push

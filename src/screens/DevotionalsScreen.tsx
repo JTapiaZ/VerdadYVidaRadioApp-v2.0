@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Share, FlatList, ActivityIndicator, Alert, RefreshControl } from "react-native";
 import Video from "react-native-video";
 import Icon from 'react-native-vector-icons/Ionicons';
-import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
+import { collection, query, orderBy, onSnapshot, doc, setDoc, deleteDoc, where } from "firebase/firestore";
 import { db } from "../firebaseConfig";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -12,20 +12,74 @@ const DevotionalsScreen = ({ navigation }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [favorites, setFavorites] = useState({});
 
-  // Cargar favoritos al iniciar
-  useEffect(() => {
-    const loadFavorites = async () => {
-      const savedFavorites = await AsyncStorage.getItem('devotionalFavorites');
-      setFavorites(savedFavorites ? JSON.parse(savedFavorites) : {});
-    };
-    loadFavorites();
-  }, []);
+  // Actualiza tu useEffect de carga de favoritos:
+useEffect(() => {
+  const loadFavorites = async () => {
+    const userData = await AsyncStorage.getItem('user');
+    if (!userData) return;
+
+    const { email } = JSON.parse(userData);
+    
+    // Consulta a Firestore
+    const q = query(
+      collection(db, "userFavorites"),
+      where("userId", "==", email),
+      where("type", "==", "devotional")
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const favs = {};
+      snapshot.docs.forEach(doc => {
+        const data = doc.data().data;
+        favs[data.id] = true;
+      });
+      setFavorites(favs);
+    });
+
+    return () => unsubscribe();
+  };
+
+  loadFavorites();
+}, []);
 
   // Manejar favoritos
-  const toggleFavorite = async (id) => {
-    const newFavorites = {...favorites, [id]: !favorites[id]};
-    await AsyncStorage.setItem('devotionalFavorites', JSON.stringify(newFavorites));
-    setFavorites(newFavorites);
+  const toggleFavorite = async (devotional) => {
+    try {
+      const userData = await AsyncStorage.getItem('user');
+      if (!userData) throw new Error("Usuario no autenticado");
+  
+      const { email } = JSON.parse(userData);
+      const favoriteId = `${email}_devotional_${devotional.id}`; // ID compuesto único
+      
+      const favoriteRef = doc(db, "userFavorites", favoriteId);
+  
+      if (favorites[devotional.id]) {
+        // Eliminar de favoritos
+        await deleteDoc(favoriteRef);
+        setFavorites((prev) => ({ ...prev, [devotional.id]: false }));
+        Alert.alert('❤️ Devocional eliminado de favoritos');
+      } else {
+        // Guardar en Firestore con estructura compatible
+        const favoriteData = {
+          userId: email,
+          type: "devotional",
+          data: {
+            id: devotional.id, // ID del devocional original
+            title: devotional.title,
+            content: devotional.content,
+            videoUrl: devotional.videoUrl || null,
+            createdAt: new Date(),
+          },
+        };
+  
+        await setDoc(favoriteRef, favoriteData);
+        setFavorites((prev) => ({ ...prev, [devotional.id]: true }));
+        Alert.alert('⭐ ¡Añadido a favoritos!');
+      }
+    } catch (error) {
+      console.error("Error en toggleFavorite:", error);
+      Alert.alert('❌ Error', error.message);
+    }
   };
 
   // Detección de nuevo devocional
@@ -84,7 +138,7 @@ const DevotionalsScreen = ({ navigation }) => {
   // Render Item mejorado
   const renderItem = ({ item }) => (
     <TouchableOpacity 
-      onPress={() => navigation.navigate('DevotionalDetailScreen', { devotionalId: item.id })}
+      onPress={() => navigation.navigate('DevotionalDetailScreen', { devotionalId: item.id, devotional: item })}
     >
     <View style={styles.card}>
       {item.videoUrl && (
@@ -102,13 +156,13 @@ const DevotionalsScreen = ({ navigation }) => {
         <Text style={styles.content}>{item.content}</Text>
         
         <View style={styles.actions}>
-          <TouchableOpacity onPress={() => toggleFavorite(item.id)}>
-            <Icon 
-              name={favorites[item.id] ? "heart" : "heart-outline"}
-              size={24} 
-              color="#ff4757"
-            />
-          </TouchableOpacity>
+        <TouchableOpacity onPress={() => toggleFavorite(item)}>
+          <Icon 
+            name={favorites[item.id] ? "heart" : "heart-outline"}
+            size={24} 
+            color="#ff4757"
+          />
+        </TouchableOpacity>
           
           <TouchableOpacity onPress={() => Share.share({
             message: `${item.title}\n\n${item.content}`
