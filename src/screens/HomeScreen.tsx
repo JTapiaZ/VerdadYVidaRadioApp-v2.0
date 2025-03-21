@@ -1,8 +1,8 @@
 import React, {useState, useEffect, useContext} from "react";
-import { View, Text, Image, TouchableOpacity, StyleSheet, Linking, ScrollView, ActivityIndicator } from "react-native";
+import { View, Text, Image, TouchableOpacity, StyleSheet, Linking, ScrollView, ActivityIndicator, Alert } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import Icon from "react-native-vector-icons/Ionicons";
-import { BibleContext, useBible } from "../context/BibleContext"; // Importamos el contexto
+import { useBible } from "../context/BibleContext"; // Importamos el contexto
 
 // Diccionario para traducir nombres de libros
 const bookTranslations: Record<string, string> = {
@@ -90,13 +90,19 @@ const HomeScreen = () => {
     const fetchDailyVerse = async () => {
       try {
         const dailyVerse = await getVerseFromOurManna();
+
+        // console.log(dailyVerse.reference);
+        
         if (!dailyVerse) throw new Error("No se pudo obtener el versículo en inglés.");
 
         const { book: bookEn, chapter, verseNum, fullReference } = extractVerseDetails(dailyVerse.reference);
+        
 
         setBookDailyEn(bookEn);
         
         const spanishVerse = await getVerseInSpanish(bookEn, chapter, verseNum);
+        console.log(spanishVerse);
+        
         if (!spanishVerse) throw new Error("No se pudo obtener el versículo en español.");
 
         // Traducir el nombre del libro al español
@@ -125,27 +131,67 @@ const HomeScreen = () => {
 
   // 🔹 Extrae los detalles del versículo (libro, capítulo y versículo)
   const extractVerseDetails = (reference: string) => {
-    const match = reference.match(/^([\d]*\s?[A-Za-z\s]+)\s(\d+):(\d+)$/);
+    // Expresión regular mejorada para manejar rangos y múltiples formatos
+    const match = reference.match(/^(\d*\-?\s?[A-Za-z\s\-]+)\s(\d+):(\d+[\-\d,]*)/);
+    console.log(match);
+    
     if (!match) throw new Error("Formato de referencia no válido");
-
+  
     let book = match[1].trim();
     const chapter = match[2];
-    const verseNum = match[3];
+    const verses = match[3];  // Ahora acepta rangos (ej: 13-14, 15, 20-25)
 
-    // Si el libro comienza con un número (1, 2, 3), agregamos un guion
+    // console.log(verses);
+    
+  
+    // Normalizar el nombre del libro para la API
     if (/^\d/.test(book)) {
       book = book.replace(" ", "-");
     }
+  
+    // Obtener el primer versículo del rango para la llamada a la API
+    // const firstVerse = verses.split(/[-,]/)[0];
 
-    return { book, chapter, verseNum, fullReference: `${book} ${chapter}:${verseNum}` };
+    // console.log(firstVerse);
+    
+    
+    return { 
+      book, 
+      chapter, 
+      verseNum: verses, // Usamos solo el primer versículo para la API
+      fullReference: `${book} ${chapter}:${verses}` // Mantenemos el rango original para mostrar
+    };
   };
 
   // 🔹 Obtiene el versículo en español desde la API
-const getVerseInSpanish = async (book: string, chapter: string, verseNum: string) => {
-  const response = await fetch(`https://bible-api.deno.dev/api/read/rv1960/${book}/${chapter}/${verseNum}`);
-  const data = await response.json();
-  return data.verse;
-};
+  const getVerseInSpanish = async (book: string, chapter: string, verseRange: string) => {
+    // console.log(verseRange);
+    
+    // Usar verseRange en lugar de verseNum
+    const response = await fetch(
+      `https://bible-api.deno.dev/api/read/rv1960/${book}/${chapter}/${verseRange}`
+    );
+    const data = await response.json();
+    console.log(data.verses);
+    
+    return data?.map(v => v.verse).join(" ") || "";
+  };
+
+  // Función genérica para abrir redes sociales
+    const openSocialMedia = async (appUrl: string, webUrl: string) => {
+      try {
+        // Verificar si se puede abrir la app
+        const canOpen = await Linking.canOpenURL(appUrl);
+        
+        if (canOpen) {
+          await Linking.openURL(appUrl);
+        } else {
+          await Linking.openURL(webUrl);
+        }
+      } catch (error) {
+        Alert.alert('Error', 'No se pudo abrir el enlace');
+      }
+    };
 
 
   return (
@@ -170,7 +216,7 @@ const getVerseInSpanish = async (book: string, chapter: string, verseNum: string
           <Text style={styles.subtitle}>Conéctate con la mejor música y mensajes inspiradores.</Text>
 
           {/* Botón para escuchar en vivo */}
-          <TouchableOpacity style={styles.button} onPress={() => navigation.navigate("RadioScreen")}> 
+          <TouchableOpacity style={styles.button} onPress={() => navigation.navigate("Radio")}> 
             <Text style={styles.buttonText}>🎧 Escuchar en Vivo</Text>
           </TouchableOpacity>
 
@@ -180,7 +226,7 @@ const getVerseInSpanish = async (book: string, chapter: string, verseNum: string
           </TouchableOpacity>
 
           {/* Biblia */}
-          <TouchableOpacity style={styles.buttonSecondary} onPress={() => navigation.navigate("BibleScreen")}> 
+          <TouchableOpacity style={styles.buttonSecondary} onPress={() => navigation.navigate("Biblia")}> 
             <Text style={styles.buttonText}>📖 Biblia</Text>
           </TouchableOpacity>
         </View>
@@ -217,10 +263,16 @@ const getVerseInSpanish = async (book: string, chapter: string, verseNum: string
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Conéctate con Nosotros</Text>
           <View style={styles.socialButtons}>
-            <TouchableOpacity onPress={() => Linking.openURL("https://facebook.com/verdadyvidaradio")}>
+            <TouchableOpacity onPress={() => openSocialMedia(
+              'fb://profile/359807460699524', // Reemplaza con tu ID de Facebook
+              'https://www.facebook.com/radioverdadyvida'
+            )}>
               <Text style={styles.socialText}><Icon name="logo-facebook" size={22} color="#3B5998" /> Facebook</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => Linking.openURL("https://youtube.com/verdadyvidaradio")}>
+            <TouchableOpacity onPress={() => openSocialMedia(
+              'youtube://channel/UCsCRnbf4sA7E8FpQa6FKfMg', 
+              'https://www.youtube.com/@VerdadYVidaRadioOficial'
+            )}>
               <Text style={styles.socialText}><Icon name="logo-youtube" size={22} color="#ff0000" /> YouTube</Text>
             </TouchableOpacity>
           </View>

@@ -1,6 +1,6 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { NavigationContainer } from "@react-navigation/native";
+import { NavigationContainer, CommonActions } from "@react-navigation/native";
 import { View, Text } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 
@@ -60,7 +60,20 @@ const BottomTabNavigator = () => {
       <Tab.Screen name="Radio" component={RadioScreen} />
       <Tab.Screen name="Devocionales" component={DevotionalStack} />
       <Tab.Screen name="Biblia" component={BibleStack} />
-      <Tab.Screen name="Más" component={MoreStack} />
+      <Tab.Screen name="Más" component={MoreStack} listeners={({ navigation }) => ({
+        tabPress: (e) => {
+          // Previene el comportamiento por defecto
+          e.preventDefault();
+          
+          // Navega resetando el stack
+          navigation.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [{ name: 'Más' }]
+            })
+          );
+        }
+      })}/>
     </Tab.Navigator>
   );
 };

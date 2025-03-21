@@ -75,7 +75,7 @@ const getFavoritesData = async (ids: string[], type: 'devotionals' | 'verses') =
 };
 
 
-const ProfileScreen = ({ navigation }: NavigationProps) => {
+const ProfileScreen = ({ navigation, route }: NavigationProps) => {
   const { setBook, setChapter, setVerse, setVersion, setSelectedVerses } = useBible();
   const [favorites, setFavorites] = useState<{
     userFavorites: FavoriteItem[];
@@ -88,7 +88,7 @@ const ProfileScreen = ({ navigation }: NavigationProps) => {
   });
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null); // Estado para almacenar los datos del usuario
-  const [selectedCategory, setSelectedCategory] = useState<'devotionals' | 'verses' | 'userFavorites'>('devotionals'); // Estado para la categoría seleccionada
+  const [selectedCategory, setSelectedCategory] = useState<'devotionals' | 'verses' | 'userFavorites'>(route.params?.initialCategory || 'devotionals'); // Estado para la categoría seleccionada
 
   // Cargar favoritos y datos del usuario
   useEffect(() => {
@@ -238,6 +238,13 @@ const ProfileScreen = ({ navigation }: NavigationProps) => {
       Alert.alert('❌ Error', 'No se pudo eliminar el favorito');
     }
   };
+
+  // Opcional: Actualiza si el parámetro cambia
+  useEffect(() => {
+    if (route.params?.initialCategory) {
+      setSelectedCategory(route.params.initialCategory);
+    }
+  }, [route.params]);
 
   return (
     <View style={styles.container}>

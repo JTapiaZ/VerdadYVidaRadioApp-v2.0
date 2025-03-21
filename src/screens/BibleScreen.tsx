@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useRef } from "react";
 import { View, StyleSheet, Animated, Text, TouchableOpacity, Share, Alert, ScrollView } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, CommonActions } from "@react-navigation/native";
 import Icon from "react-native-vector-icons/Ionicons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { books } from "./BookSelectionScreen";
 import { useBible } from "../context/BibleContext";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, query, where, onSnapshot, doc, deleteDoc, setDoc, getDocs } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
+
 
 
 interface Verse {
@@ -21,6 +22,7 @@ interface Verse {
 
 const BibleReader = () => {
   const { verse, selectedVerses, setSelectedVerses } = useBible(); // Obtener versículo del contexto
+  const [favoriteVerseIds, setFavoriteVerseIds] = useState<string[]>([]);
   
   const insets = useSafeAreaInsets();
   const { version, book, chapter } = useBible();
@@ -34,6 +36,17 @@ const BibleReader = () => {
   const [isDarkMode, setIsDarkMode] = useState(false); // Estado del tema
   // const [selectedVerses, setSelectedVerses] = useState<VersesType[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+
+  // const goToMoreScreen = () => {
+  //   navigation.dispatch(
+  //     CommonActions.navigate({
+  //       name: 'Más',
+  //       params: {
+  //         screen: 'MoreMain' // Fuerza mostrar la pantalla principal del stack
+  //       }
+  //     })
+  //   );
+  // };
 
   // Ref para el ScrollView
   const scrollViewRef = useRef<ScrollView>(null);
@@ -65,6 +78,32 @@ const BibleReader = () => {
     setResponse(null);
   }, [version]);
 
+  // Carga los favoritos al montar el componente y cuando cambia el capítulo
+useEffect(() => {
+  const loadFavorites = async () => {
+    const userData = await AsyncStorage.getItem('user');
+    if (!userData) return;
+
+    const { email } = JSON.parse(userData);
+    const q = query(
+      collection(db, 'userFavorites'),
+      where("userId", "==", email),
+      where("type", "==", "verse")
+      // where("data.book", "==", book),
+      // where("data.chapter", "==", Number(chapter))
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const ids = snapshot.docs.map(doc => doc.data().data.id);
+      setFavoriteVerseIds(ids);
+    });
+
+    return unsubscribe;
+  };
+
+  loadFavorites();
+}, [book, chapter]); // Recargar cuando cambia el libro o capítulo
+
   // Efecto para desplazar al versículo
   useEffect(() => {
     if (verse > 0 && response?.vers) {
@@ -93,6 +132,8 @@ const BibleReader = () => {
           }));
           
         setResponse({ ...json, vers: versWithIds });
+        setSelectedVerses([]); // Resetear selección al cambiar de capítulo
+
       });
     }, 300); // Espera 300ms antes de hacer la solicitud
   
@@ -160,50 +201,56 @@ const BibleReader = () => {
       const { email } = JSON.parse(userData);
       const bookName = books.find(b => b.value === book)?.name || book;
   
-      // Filtra IDs válidos y estructura correcta
-      const validVerses = selectedVerses.filter(verseId => {
-        if (!verseId) return false; // Elimina valores undefined/null
-        const parts = verseId.split('_');
-        return parts.length === 3 && !isNaN(Number(parts[2]));
-      });
+      // Obtener todos los favoritos existentes del usuario
+      const q = query(
+        collection(db, 'userFavorites'),
+        where("userId", "==", email),
+        where("type", "==", "verse")
+      );
+      
+      const querySnapshot = await getDocs(q);
+      const existingFavorites = querySnapshot.docs.map(doc => doc.data().data.id);
   
-      if (validVerses.length === 0) {
-        throw new Error("No hay versículos válidos para guardar");
-      }
-  
-      // Guardar en Firestore
+      // Manejar operaciones
       await Promise.all(
-        validVerses.map(async (verseId) => {
-          const [bookId, chapterNumber, verseNumber] = verseId.split('_');
-          
-          // Busca el texto usando el ID real del versículo
-          const verseText = response?.vers?.find(
-            v => v.id === verseId // Usa el ID generado en el fetch
-          )?.verse;
+        selectedVerses.map(async (verseId) => {
+          // Buscar el documento existente
+          const existingDoc = querySnapshot.docs.find(
+            d => d.data().data.id === verseId
+          );
   
-          if (!verseText) {
-            console.warn("Versículo no encontrado:", verseId);
-            return;
-          }
-  
-          await addDoc(collection(db, 'userFavorites'), {
-            userId: email,
-            type: 'verse',
-            data: {
-              id: verseId,
-              reference: `${bookName} ${chapter}:${verseNumber}`,
-              text: verseText,
-              book: bookId,
-              chapter: Number(chapterNumber),
-              number: Number(verseNumber),
-              version: version,
-              createdAt: new Date()
+          if (existingDoc) {
+            // Eliminar usando el ID real del documento de Firestore
+            await deleteDoc(doc(db, 'userFavorites', existingDoc.id));
+          } else {
+            // Crear nuevo documento
+            const [bookId, chapterNumber, verseNumber] = verseId.split('_');
+            const verseText = response?.vers?.find(v => v.id === verseId)?.verse;
+            
+            if (!verseText) {
+              console.warn("Versículo no encontrado:", verseId);
+              return;
             }
-          });
+  
+            await addDoc(collection(db, 'userFavorites'), {
+              userId: email,
+              type: 'verse',
+              data: {
+                id: verseId,
+                reference: `${bookName} ${chapter}:${verseNumber}`,
+                text: verseText,
+                book: bookId,
+                chapter: Number(chapterNumber),
+                number: Number(verseNumber),
+                version: version,
+                createdAt: new Date()
+              }
+            });
+          }
         })
       );
   
-      Alert.alert("✅ Versículos guardados en Firestore");
+      Alert.alert("✅ Operación completada");
       setSelectedVerses([]);
   
     } catch (error) {
@@ -278,15 +325,21 @@ const BibleReader = () => {
                 {Array.isArray(response.vers) ? (
                   response.vers.map((item) => (
                     
+                    // Modifica el renderizado de versículos para incluir el resaltado
                     <TouchableOpacity
                       key={item.id}
                       onPress={() => toggleVerseSelection(item)}
                       style={[
                         styles.verseWrapper,
-                        selectedVerses.includes(item.id) ? styles.selectedVerse : null
+                        selectedVerses.includes(item.id) && styles.selectedVerse,
+                        favoriteVerseIds.includes(item.id) && styles.favoritedVerse // Nuevo estilo
                       ]}
                     >
-                      <Text style={[styles.verseText, { color: isDarkMode ? "white" : "#333" }]}>
+                      <Text style={[
+                        styles.verseText, 
+                        { color: isDarkMode ? "white" : "#333" },
+                        favoriteVerseIds.includes(item.id) && styles.favoritedText // Nuevo estilo de texto
+                      ]}>
                         <Text style={{ fontWeight: 'bold' }}>{item.number}.</Text>
                         {item.verse}
                         {selectedVerses.includes(item.id) && (
@@ -311,9 +364,17 @@ const BibleReader = () => {
             onPress={handleAddToFavorites}
             disabled={isSaving}
           >
-            <Icon name={isSaving ? "time-outline" : "heart-outline"} size={24} color="white" />
+            <Icon 
+              name={isSaving ? "time-outline" : (selectedVerses.some(v => favoriteVerseIds.includes(v)) ? "trash-outline" : "heart-outline")} 
+              size={24} 
+              color="white" 
+            />
             <Text style={styles.actionText}>
-              {isSaving ? 'Guardando...' : 'Favoritos'}
+              {isSaving ? 'Guardando...' : (
+                selectedVerses.some(v => favoriteVerseIds.includes(v)) 
+                  ? 'Eliminar favorito' 
+                  : 'Agregar favorito'
+              )}
             </Text>
           </TouchableOpacity>
 
@@ -440,6 +501,15 @@ const styles = StyleSheet.create({
   disabledButton: {
     backgroundColor: '#888',
     opacity: 0.7,
+  },
+  favoritedVerse: {
+    backgroundColor: 'rgba(255,215,0,0.15)', // Fondo dorado suave
+    borderLeftWidth: 3,
+    borderLeftColor: '#FFD700', // Borde dorado
+  },
+  favoritedText: {
+    color: '#FFD700', // Texto dorado
+    fontStyle: 'italic',
   },
 });
 
