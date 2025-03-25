@@ -15,6 +15,8 @@ import { collection, query, where, getDocs, deleteDoc, doc } from 'firebase/fire
 import { db } from '../firebaseConfig';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useBible } from '../context/BibleContext';
+import { useAuth} from '../context/AuthContext';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Función para obtener los datos completos de los favoritos desde Firestore
 interface FavoriteItem {
@@ -77,6 +79,8 @@ const getFavoritesData = async (ids: string[], type: 'devotionals' | 'verses') =
 
 const ProfileScreen = ({ navigation, route }: NavigationProps) => {
   const { setBook, setChapter, setVerse, setVersion, setSelectedVerses } = useBible();
+  const { user, signOut } = useAuth();
+
   const [favorites, setFavorites] = useState<{
     userFavorites: FavoriteItem[];
     devotionals: FavoriteItem[];
@@ -87,7 +91,7 @@ const ProfileScreen = ({ navigation, route }: NavigationProps) => {
     verses: []
   });
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<User | null>(null); // Estado para almacenar los datos del usuario
+  // const [user, setUser] = useState<User | null>(null); // Estado para almacenar los datos del usuario
   const [selectedCategory, setSelectedCategory] = useState<'devotionals' | 'verses' | 'userFavorites'>(route.params?.initialCategory || 'devotionals'); // Estado para la categoría seleccionada
 
   // Cargar favoritos y datos del usuario
@@ -126,20 +130,6 @@ const ProfileScreen = ({ navigation, route }: NavigationProps) => {
   
     loadData();
   }, []);
-
-  // Función para manejar el cierre de sesión
-  const handleLogout = async () => {
-    try {
-      // Eliminar datos de autenticación
-      await AsyncStorage.removeItem('user');
-      await AsyncStorage.removeItem('token');
-
-      // Redirigir a la pantalla de inicio de sesión
-      navigation.replace('Login'); // Cambia 'Login' por el nombre de tu pantalla de inicio de sesión
-    } catch (error) {
-      console.error('Error cerrando sesión:', error);
-    }
-  };
 
   // Función para manejar la edición del perfil
   const handleEditProfile = () => {
@@ -235,7 +225,7 @@ const ProfileScreen = ({ navigation, route }: NavigationProps) => {
   
     } catch (error) {
       console.error('Error eliminando favorito:', error);
-      Alert.alert('❌ Error', 'No se pudo eliminar el favorito');
+      Alert.alert('❌ Error', 'No se pudo eliminar el favorito, verifica tu conexión a internet');
     }
   };
 
@@ -246,8 +236,20 @@ const ProfileScreen = ({ navigation, route }: NavigationProps) => {
     }
   }, [route.params]);
 
+  const handleSignOut = async () => {
+      try {
+        console.log('Iniciando proceso...');
+        await signOut();
+        console.log('Proceso completado exitosamente');
+        navigation.navigate('LoginScreen');
+      } catch (error) {
+        // Alert.alert('Error', error.message);
+        console.log('Error capturado en UI:', error);
+      }
+    };
+
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -268,10 +270,10 @@ const ProfileScreen = ({ navigation, route }: NavigationProps) => {
 
       {/* Botones de editar perfil y cerrar sesión */}
       <View style={styles.iconButtonContainer}>
-        <TouchableOpacity style={styles.iconButton} onPress={handleEditProfile}>
+        {/* <TouchableOpacity style={styles.iconButton} onPress={handleEditProfile}>
           <Icon name="pencil-outline" size={24} color="#333" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.iconButton} onPress={handleLogout}>
+        </TouchableOpacity> */}
+        <TouchableOpacity style={styles.iconButton} onPress={handleSignOut}>
           <Icon name="log-out-outline" size={24} color="#ff6b6b" />
         </TouchableOpacity>
       </View>
@@ -300,28 +302,28 @@ const ProfileScreen = ({ navigation, route }: NavigationProps) => {
 
       {/* Lista de favoritos */}
       <View style={styles.listContainer}>
-        <SectionList
-          sections={[
-            { 
-              title: selectedCategory === 'devotionals' ? 'Devocionales' : 'Versículos',
-              data: selectedCategory === 'devotionals' ? favorites.devotionals : favorites.verses
-            }
-          ]}
-          keyExtractor={(item) => item.id}
-          renderItem={renderItem}
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Image
-                source={require('../../assets/img/EmptyFavorites.png')}
-                style={styles.emptyImage}
-              />
-              <Text style={styles.emptyText}>No tienes favoritos aún</Text>
-            </View>
+      <SectionList
+        sections={[
+          { 
+            title: selectedCategory === 'devotionals' ? 'Devocionales' : 'Versículos',
+            data: selectedCategory === 'devotionals' ? favorites.devotionals : favorites.verses
           }
-          contentContainerStyle={styles.listContent}
-        />
+        ]}
+        keyExtractor={(item) => item.id}
+        renderItem={renderItem}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Image
+              source={require('../../assets/img/EmptyFavorites.png')}
+              style={styles.emptyImage}
+            />
+            <Text style={styles.emptyText}>No tienes favoritos aún</Text>
+          </View>
+        }
+        contentContainerStyle={styles.listContent}
+      />
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 

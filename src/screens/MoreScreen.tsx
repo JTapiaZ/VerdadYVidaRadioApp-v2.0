@@ -2,9 +2,12 @@ import React from "react";
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Linking, Alert } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 import { useNavigation } from "@react-navigation/native";
+import { useAuth } from '../context/AuthContext';
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const MoreScreen = () => {
   const navigation = useNavigation();
+  const { user, signOut } = useAuth();
 
   // Función genérica para abrir redes sociales
   const openSocialMedia = async (appUrl: string, webUrl: string) => {
@@ -18,15 +21,15 @@ const MoreScreen = () => {
         await Linking.openURL(webUrl);
       }
     } catch (error) {
-      Alert.alert('Error', 'No se pudo abrir el enlace');
+      Alert.alert('❌ Error', 'No se pudo abrir el enlace, verifica tu conexión a internet');
     }
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
       {/* Header personalizado */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Máss</Text>
+        <Text style={styles.headerTitle}>Más</Text>
         <TouchableOpacity style={styles.donateButton} onPress={() => navigation.navigate("DonationScreen")}>
           <Icon name="heart" size={18} color="black" />
           <Text style={styles.donateText}>Donar Ahora</Text>
@@ -34,13 +37,13 @@ const MoreScreen = () => {
       </View>
 
       {/* Contenido */}
-      <ScrollView contentContainerStyle={styles.content} style={{ flex: 1 }}>
+      <ScrollView contentContainerStyle={{ padding: 15 }} style={{ flex: 1 }}>
         {/* Sección de Acciones */}
-        <TouchableOpacity style={styles.item} onPress={() => navigation.navigate("ProfileScreen") }>
+        <TouchableOpacity style={styles.item} onPress={user? () => navigation.navigate("ProfileScreen") : () => navigation.navigate("LoginScreen")}>
           <Icon name="person-circle-outline" size={35} color="#555" style={styles.icon} />
-          <Text style={styles.itemText}>Juan José Tapias Pinzón</Text>
+          <Text style={styles.itemText}>{user?.displayName || 'Iniciar Sesión'}</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.item} onPress={() => navigation.navigate("ProfileScreen", { initialCategory: 'verses' })}>
+        <TouchableOpacity style={styles.item} onPress={user? () => navigation.navigate("ProfileScreen", { initialCategory: 'verses' }) : () => navigation.navigate("LoginScreen")}>
           <Icon name="heart-outline" size={24} color="#555" style={styles.icon} />
           <Text style={styles.itemText}>Versículos favoritos</Text>
         </TouchableOpacity>
@@ -102,7 +105,7 @@ const MoreScreen = () => {
           <Text style={styles.itemText}>¡Síguenos en Youtube!</Text>
         </TouchableOpacity>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 

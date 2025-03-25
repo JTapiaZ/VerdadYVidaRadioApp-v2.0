@@ -132,7 +132,7 @@ const togglePlayback = async () => {
             url: 'https://play.google.com/store/apps/details?id=com.verdadyvidaradio&hl=es_CO', 
         }); 
     } catch (error) { 
-        alert(error.message); 
+        alert('❌ Error al compartir, intente nuevamente'); 
     } 
 }; 
 

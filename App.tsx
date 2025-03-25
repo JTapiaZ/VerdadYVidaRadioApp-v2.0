@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { Text, Alert, Platform } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import BottomTabNavigator from "./src/navigation/BottomTabNavigator";
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { BibleProvider } from "./src/context/BibleContext"; // Contexto
 
 import { initializeApp } from "firebase/app";
@@ -10,6 +11,8 @@ import { firebaseConfig } from "./src/firebaseConfig";
 
 import messaging from "@react-native-firebase/messaging"; // Firebase
 import { requestNotificationPermission, getFCMToken } from "./src/NotificationService"; // Servicio de notificaciones
+import { AuthProvider } from "./src/context/AuthContext";
+
 
 // 🔥 Inicializar Firebase
 const app = initializeApp(firebaseConfig);
@@ -48,11 +51,15 @@ const App = () => {
   }, []);
 
   return (
-    <BibleProvider>
-      <NavigationContainer>
-        <BottomTabNavigator />
-      </NavigationContainer>
-    </BibleProvider>
+    <SafeAreaProvider>
+      <AuthProvider>
+        <BibleProvider>
+          <NavigationContainer>
+            <BottomTabNavigator />
+          </NavigationContainer>
+        </BibleProvider>
+      </AuthProvider>
+    </SafeAreaProvider>
   );
 };
 

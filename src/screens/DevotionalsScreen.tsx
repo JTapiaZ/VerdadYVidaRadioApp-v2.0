@@ -1,16 +1,22 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, Share, FlatList, ActivityIndicator, Alert, RefreshControl } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, Share, FlatList, ActivityIndicator, Alert, RefreshControl, useColorScheme, Image, TextInput } from "react-native";
 import Video from "react-native-video";
 import Icon from 'react-native-vector-icons/Ionicons';
 import { collection, query, orderBy, onSnapshot, doc, setDoc, deleteDoc, where } from "firebase/firestore";
 import { db } from "../firebaseConfig";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useAuth } from "../context/AuthContext";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const DevotionalsScreen = ({ navigation }) => {
   const [devotionals, setDevotionals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [favorites, setFavorites] = useState({});
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchText, setSearchText] = useState("");
+
+  const { user, signOut } = useAuth();
 
   // Actualiza tu useEffect de carga de favoritos:
 useEffect(() => {
@@ -78,7 +84,7 @@ useEffect(() => {
       }
     } catch (error) {
       console.error("Error en toggleFavorite:", error);
-      Alert.alert('❌ Error', error.message);
+      Alert.alert('❌ Error', 'Intenta nuevamente');
     }
   };
 
@@ -88,7 +94,7 @@ useEffect(() => {
     
     const storedId = await AsyncStorage.getItem("lastDevotionalId");
     if (storedId !== latest.id) {
-      Alert.alert("📖 Nuevo Devocional", latest.title);
+      Alert.alert("¡📖 Nuevo Devocional!", `Puedes ir a ver nuestro nuevo devocional llamado: ${latest.title}`);
       await AsyncStorage.setItem("lastDevotionalId", latest.id);
     }
   };
@@ -108,7 +114,7 @@ useEffect(() => {
         });
 
       } catch (error) {
-        Alert.alert("Error", "Error cargando devocionales");
+        Alert.alert("❌ Error", "Error cargando devocionales, revisa tu conexión a internet");
         setLoading(false);
       }
     };
@@ -129,11 +135,19 @@ useEffect(() => {
       const latest = devotionals[0];
       await detectNewDevotional(latest);
     } catch (error) {
-      Alert.alert("Error", "Error al actualizar");
+      Alert.alert("❌ Error", "Error al actualizar, revisa tu conexión a internet");
     } finally {
       setRefreshing(false);
     }
   };
+
+  // Filtrar devocionales por búsqueda en título o pastor
+const filteredDevotionals = devotionals.filter(item => {
+  const searchLower = searchText.toLowerCase();
+  const titleMatch = item.title.toLowerCase().includes(searchLower);
+  const pastorMatch = item.pastor ? item.pastor.toLowerCase().includes(searchLower) : false;
+  return titleMatch || pastorMatch;
+});
 
   // Render Item mejorado
   const renderItem = ({ item }) => (
@@ -141,7 +155,13 @@ useEffect(() => {
       onPress={() => navigation.navigate('DevotionalDetailScreen', { devotionalId: item.id, devotional: item })}
     >
     <View style={styles.card}>
-      {item.videoUrl && (
+    {item.imageUrl && (
+        <Image
+          source={{ uri: item.imageUrl }}
+          style={{ width: '100%', height: 200, borderTopLeftRadius: 15, borderTopRightRadius: 15 }}
+        />
+      )}
+      {/* {item.videoUrl && (
         <Video
           source={{ uri: item.videoUrl }}
           style={styles.video}
@@ -149,21 +169,29 @@ useEffect(() => {
           resizeMode="contain"
           paused={true}
         />
-      )}
+      )} */}
       
       <View style={styles.cardContent}>
         <Text style={styles.title}>{item.title}</Text>
-        <Text style={styles.content}>{item.content}</Text>
+        <Text style={styles.content} numberOfLines={3} ellipsizeMode="tail">{item.content}</Text>
+
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <Icon name="person" size={15} color="#555" />
+          <Text style={{margin: 10, color: '#333'}}>{item.pastor}</Text>
+        </View>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <Icon name="calendar" size={15} color="#555" style={{marginRight: 10,}} />
+          <Text style={{color: '#333'}}>{new Date(item.createdAt?.toDate()).toLocaleDateString()}</Text>
+        </View>
         
         <View style={styles.actions}>
-        <TouchableOpacity onPress={() => toggleFavorite(item)}>
+        <TouchableOpacity onPress={user? () => toggleFavorite(item) : () => navigation.navigate("LoginScreen")}>
           <Icon 
             name={favorites[item.id] ? "heart" : "heart-outline"}
             size={24} 
             color="#ff4757"
           />
         </TouchableOpacity>
-          
           <TouchableOpacity onPress={() => Share.share({
             message: `${item.title}\n\n${item.content}`
           })}>
@@ -176,14 +204,30 @@ useEffect(() => {
   );
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      {/* Header con título y botón de búsqueda */}
+      <View style={styles.header}>
+        <Text style={styles.headerText}>Nuestros Devocionales</Text>
+        <TouchableOpacity onPress={() => setShowSearch(prev => !prev)} style={styles.searchButton}>
+          <Icon name="search" size={24} color="#2d3436" />
+        </TouchableOpacity>
+      </View>
+      {/* Mostrar campo de búsqueda si está activo */}
+      {showSearch && (
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Buscar por título o pastor :"
+          value={searchText}
+          onChangeText={setSearchText}
+        />
+      )}
       <FlatList
-        data={devotionals}
+        data={filteredDevotionals}
         renderItem={renderItem}
         keyExtractor={item => item.id}
         ListEmptyComponent={
           <Text style={styles.empty}>
-            {loading ? "Cargando..." : "No hay devocionales disponibles"}
+            {loading ? "..." : "No hay devocionales disponibles"}
           </Text>
         }
         refreshControl={
@@ -196,10 +240,10 @@ useEffect(() => {
       
       {loading && (
         <View style={styles.loading}>
-          <ActivityIndicator size="large" color="#2ed573" />
+          <ActivityIndicator size="large" color={useColorScheme==='dark'? '#fff' : "333"} />
         </View>
       )}
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -209,6 +253,34 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f1f2f6',
     marginBottom: 60,
+  },
+  header: {
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e9ecef',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  headerText: {
+    fontSize: 19,
+    fontWeight: '700',
+    color: '#2d3436',
+  },
+  searchButton: {
+    padding: 5,
+  },
+  searchInput: {
+    backgroundColor: '#fff',
+    padding: 10,
+    marginHorizontal: 20,
+    marginTop: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+    marginBottom: 10,
   },
   card: {
     backgroundColor: 'white',
@@ -245,7 +317,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 50,
     fontSize: 16,
-    color: '#57606f',
+    color: '#333',
   },
   loading: {
     ...StyleSheet.absoluteFillObject,

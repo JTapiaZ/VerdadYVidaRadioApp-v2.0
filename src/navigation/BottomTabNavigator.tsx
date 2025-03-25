@@ -3,6 +3,8 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { NavigationContainer, CommonActions } from "@react-navigation/native";
 import { View, Text } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 
 //Screens
 import HomeStack from "../navigation/HomeNavigation";
@@ -10,6 +12,9 @@ import RadioScreen from "../screens/RadioScreen";
 import BibleStack from "./BibleNavigation";
 import DevotionalStack from "./DevotionalNavigation";
 import MoreStack from "../navigation/MoreNavigation";
+
+import { AuthProvider } from '../context/AuthContext';
+import LoginScreen from "../screens/LoginScreen";
 
 // Definimos los tipos de las rutas
 type RootTabParamList = {
@@ -25,6 +30,8 @@ const Tab = createBottomTabNavigator<RootTabParamList>();
 
 // Configuración del Navigator con iconos
 const BottomTabNavigator = () => {
+  const insets = useSafeAreaInsets();
+  
   return (
     <Tab.Navigator
       screenOptions={
@@ -45,13 +52,13 @@ const BottomTabNavigator = () => {
         tabBarInactiveTintColor: "gray",
         tabBarStyle: {
             position: "absolute",
-            elevation: 5,
+            elevation: 30,
             shadowOpacity: 0.1,
-            zIndex: 10,
+            zIndex: 30,
           backgroundColor: "#fff",
           borderTopLeftRadius: 15,
           borderTopRightRadius: 15,
-          height: 60,
+          height: 60 + insets.bottom, // Ajuste dinámico
           paddingBottom: 5,
         },
       })}

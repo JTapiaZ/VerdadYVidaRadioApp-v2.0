@@ -3,6 +3,7 @@ import { View, FlatList, Text, TouchableOpacity, StyleSheet, TextInput } from "r
 import { useNavigation, useRoute } from "@react-navigation/native";
 import Icon from "react-native-vector-icons/Ionicons";
 import { useBible } from "../context/BibleContext";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 
 const versions = [
@@ -36,7 +37,7 @@ const VersionSelection = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <TouchableOpacity onPress={() => navigation.navigate('Biblia')} style={styles.backButton}>
         <Icon name="arrow-back" size={24} color="#333" />
       </TouchableOpacity>
@@ -56,7 +57,7 @@ const VersionSelection = () => {
           </TouchableOpacity>
         )}
       />
-    </View>
+    </SafeAreaView>
   );
 };
 

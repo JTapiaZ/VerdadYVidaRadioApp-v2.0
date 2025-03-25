@@ -5,6 +5,7 @@ import Icon from "react-native-vector-icons/Ionicons";
 
 import { books } from './BookSelectionScreen'
 import { useBible } from "../context/BibleContext";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const chaptersByBook = {
   Genesis: 50,
@@ -95,7 +96,7 @@ const ChapterSelection = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <TouchableOpacity onPress={() => navigation.navigate("BookSelectionScreen")} style={styles.backButton}>
         <Icon name="arrow-back" size={24} color="#333" />
       </TouchableOpacity>
@@ -113,13 +114,13 @@ const ChapterSelection = () => {
           </TouchableOpacity>
         )}
       />
-    </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    top: 20,
+    top: 10,
     flex: 1,
     padding: 40,
   },
@@ -130,11 +131,12 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "bold",
     marginBottom: 20,
+    color: "#333",
   },
   item: {
     padding: 10,
     margin: 5,
-    backgroundColor: "#eee",
+    backgroundColor: "#333",
     alignItems: "center",
     justifyContent: "center",
     width: 50,

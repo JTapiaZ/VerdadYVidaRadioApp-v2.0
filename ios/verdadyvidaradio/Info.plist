@@ -54,5 +54,16 @@
 		<string>UntitledSerif-Regular.otf</string>
 		<string>SpaceMono-Regular.ttf</string>
 	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+	<dict>
+		<key>CFBundleTypeRole</key>
+		<string>Editor</string>
+		<key>CFBundleURLSchemes</key>
+		<array>
+		<string>com.googleusercontent.apps.923461091261-bvfe5ol8i3b5msj9qvokka5ed9l12h9d</string> <!-- Obtén este valor de GoogleService-Info.plist -->
+		</array>
+	</dict>
+	</array>
 </dict>
 </plist>

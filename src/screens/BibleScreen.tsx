@@ -2,12 +2,13 @@ import React, { useState, useEffect, useRef } from "react";
 import { View, StyleSheet, Animated, Text, TouchableOpacity, Share, Alert, ScrollView } from "react-native";
 import { useNavigation, CommonActions } from "@react-navigation/native";
 import Icon from "react-native-vector-icons/Ionicons";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { books } from "./BookSelectionScreen";
 import { useBible } from "../context/BibleContext";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { collection, addDoc, query, where, onSnapshot, doc, deleteDoc, setDoc, getDocs } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
+import { useAuth } from "../context/AuthContext";
 
 
 
@@ -22,10 +23,10 @@ interface Verse {
 
 const BibleReader = () => {
   const { verse, selectedVerses, setSelectedVerses } = useBible(); // Obtener versículo del contexto
-  const [favoriteVerseIds, setFavoriteVerseIds] = useState<string[]>([]);
-  
-  const insets = useSafeAreaInsets();
   const { version, book, chapter } = useBible();
+  const { user, signOut } = useAuth();
+  
+  const [favoriteVerseIds, setFavoriteVerseIds] = useState<string[]>([]);
   const [response, setResponse] = useState<{
     name?: string;
     chapter?: string;
@@ -36,23 +37,13 @@ const BibleReader = () => {
   const [isDarkMode, setIsDarkMode] = useState(false); // Estado del tema
   // const [selectedVerses, setSelectedVerses] = useState<VersesType[]>([]);
   const [isSaving, setIsSaving] = useState(false);
-
-  // const goToMoreScreen = () => {
-  //   navigation.dispatch(
-  //     CommonActions.navigate({
-  //       name: 'Más',
-  //       params: {
-  //         screen: 'MoreMain' // Fuerza mostrar la pantalla principal del stack
-  //       }
-  //     })
-  //   );
-  // };
-
+  
   // Ref para el ScrollView
   const scrollViewRef = useRef<ScrollView>(null);
-
   // Animación para cambiar el fondo del header
   const scrollY = useRef(new Animated.Value(0)).current;
+  
+  const insets = useSafeAreaInsets();
   const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
 
   const headerBackground = scrollY.interpolate({
@@ -72,11 +63,6 @@ const BibleReader = () => {
     outputRange: [isDarkMode ? "#333" : "white", isDarkMode ? "#444" : "#e3e4e5"],
     extrapolate: "clamp",
   });
-
-  useEffect(() => {
-    setupTestUser();
-    setResponse(null);
-  }, [version]);
 
   // Carga los favoritos al montar el componente y cuando cambia el capítulo
 useEffect(() => {
@@ -179,15 +165,6 @@ useEffect(() => {
     }
   };
 
-  // Ejecutar solo una vez en algún efecto
-  const setupTestUser = async () => {
-    await AsyncStorage.setItem('user', JSON.stringify({
-      email: "test@example.com",
-      displayName: "Usuario de Prueba",
-      photoURL: ""
-    }));
-  };
-
 
   // Función para guardar favoritos (Versión Corregida)
   const handleAddToFavorites = async () => {
@@ -250,11 +227,11 @@ useEffect(() => {
         })
       );
   
-      Alert.alert("✅ Operación completada");
+      Alert.alert("✅ Agregado a favoritos", "Puedes ver tus versículos favoritos en tu perfil");
       setSelectedVerses([]);
   
     } catch (error) {
-      Alert.alert("❌ Error", error.message);
+      // Alert.alert("❌ Error", error.message);
       console.error("Error detallado:", error);
     } finally {
       setIsSaving(false);
@@ -275,124 +252,129 @@ useEffect(() => {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: isDarkMode ? "#000" : "rgba(230, 230, 230, 0)" }]}>
-      {/* Header animado */}
-      <Animated.View style={[styles.header, { backgroundColor: headerBackground }]}>
-        <AnimatedTouchableOpacity 
-          style={[styles.selectionButton, { borderColor: buttonBorderColor, backgroundColor: buttonBackgroundColor }]} 
-          onPress={() => navigation.navigate("BookSelectionScreen")}
-        >
-          <Text style={[styles.selectionText, { color: isDarkMode ? "#fff" : "#000" }]}>{bookName} {chapter}</Text>
-        </AnimatedTouchableOpacity>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <SafeAreaView style={[styles.containerB, { backgroundColor: isDarkMode ? "#000" : "rgba(230, 230, 230, 0)" }]}>
+        {/* Header animado */}
+        <Animated.View style={[styles.header, { backgroundColor: headerBackground }]}>
+          <AnimatedTouchableOpacity 
+            style={[styles.selectionButton, { borderColor: buttonBorderColor, backgroundColor: buttonBackgroundColor }]} 
+            onPress={() => navigation.navigate("BookSelectionScreen")}
+          >
+            <Text style={[styles.selectionText, { color: isDarkMode ? "#fff" : "#000" }]}>{bookName} {chapter}</Text>
+          </AnimatedTouchableOpacity>
 
-        <AnimatedTouchableOpacity 
-          style={[styles.versionButton, { borderColor: buttonBorderColor, backgroundColor: buttonBackgroundColor }]} 
-          onPress={() => navigation.navigate("VersionSelectionScreen")}
-        >
-          <Icon name="book-outline" size={24} color={isDarkMode ? "white" : "black"} />
-        </AnimatedTouchableOpacity>
+          <AnimatedTouchableOpacity 
+            style={[styles.versionButton, { borderColor: buttonBorderColor, backgroundColor: buttonBackgroundColor }]} 
+            onPress={() => navigation.navigate("VersionSelectionScreen")}
+          >
+            <Icon name="book-outline" size={24} color={isDarkMode ? "white" : "black"} />
+          </AnimatedTouchableOpacity>
 
-        {/* Botón para cambiar de tema */}
-        <TouchableOpacity 
-          style={[styles.themeButton, { backgroundColor: isDarkMode ? "#444" : "#333" }]} 
-          onPress={() => toggleDarkMode()}
-        >
-          <Icon name={isDarkMode ? "sunny-outline" : "moon-outline"} size={24} color={isDarkMode ? "yellow" : "white"} />
-        </TouchableOpacity>
-      </Animated.View>
+          {/* Botón para cambiar de tema */}
+          <TouchableOpacity 
+            style={[styles.themeButton, { backgroundColor: isDarkMode ? "#444" : "#333" }]} 
+            onPress={() => toggleDarkMode()}
+          >
+            <Icon name={isDarkMode ? "sunny-outline" : "moon-outline"} size={24} color={isDarkMode ? "yellow" : "white"} />
+          </TouchableOpacity>
+        </Animated.View>
 
-      {/* Contenido desplazable */}
-      <Animated.ScrollView
-        contentContainerStyle={{
-          paddingBottom: insets.bottom + 100,
-          paddingTop: 70,
-        }}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: false }
-        )}
-        scrollEventThrottle={16}
-      >
-        {response && (
-          <View style={styles.verseContainer}>
-            {response.error ? (
-              <Text style={{ color: isDarkMode ? "white" : "black" }}>⚠️ {response.error}</Text>
-            ) : (
-              <>
-                <Text style={{ fontSize: 18, textAlign: "center", top: 10, fontFamily: "UntitledSerif-Bold", color: isDarkMode ? "white" : "#333"}}> {response.name}</Text>
-                <Text style={[styles.titleText, { color: isDarkMode ? "white" : "#333" }]}>{response.chapter}</Text>
-                <Text style={{ fontSize: 10, textAlign: "center", marginBottom: 20, color: isDarkMode ? "white" : "#333" }}> ({version})</Text>
-                {Array.isArray(response.vers) ? (
-                  response.vers.map((item) => (
-                    
-                    // Modifica el renderizado de versículos para incluir el resaltado
-                    <TouchableOpacity
-                      key={item.id}
-                      onPress={() => toggleVerseSelection(item)}
-                      style={[
-                        styles.verseWrapper,
-                        selectedVerses.includes(item.id) && styles.selectedVerse,
-                        favoriteVerseIds.includes(item.id) && styles.favoritedVerse // Nuevo estilo
-                      ]}
-                    >
-                      <Text style={[
-                        styles.verseText, 
-                        { color: isDarkMode ? "white" : "#333" },
-                        favoriteVerseIds.includes(item.id) && styles.favoritedText // Nuevo estilo de texto
-                      ]}>
-                        <Text style={{ fontWeight: 'bold' }}>{item.number}.</Text>
-                        {item.verse}
-                        {selectedVerses.includes(item.id) && (
-                          <Icon name="checkmark-circle" size={16} color="#4CAF50" style={{ marginLeft: 10 }}/>
-                        )}
-                      </Text>
-                    </TouchableOpacity>
-                  ))
-                ) : (
-                  <Text style={{ color: isDarkMode ? "white" : "black" }}>⚠️ {response.error}</Text>
+        {/* Contenido desplazable */}
+        <Animated.ScrollView
+          contentContainerStyle={{
+            paddingBottom: insets.bottom + 100,
+            paddingTop: 70,
+          }}
+          onScroll={Animated.event(
+            [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+            { useNativeDriver: false }
+          )}
+          scrollEventThrottle={16}
+        >
+          {response && (
+            <View style={styles.verseContainer}>
+              {response.error ? (
+                <Text style={{ color: isDarkMode ? "white" : "black" }}>⚠️ {response.error}</Text>
+              ) : (
+                <>
+                  <Text style={{ fontSize: 18, textAlign: "center", top: 10, fontFamily: "UntitledSerif-Bold", color: isDarkMode ? "white" : "#333"}}> {response.name}</Text>
+                  <Text style={[styles.titleText, { color: isDarkMode ? "white" : "#333" }]}>{response.chapter}</Text>
+                  <Text style={{ fontSize: 10, textAlign: "center", marginBottom: 20, color: isDarkMode ? "white" : "#333" }}> ({version})</Text>
+                  {Array.isArray(response.vers) ? (
+                    response.vers.map((item) => (
+                      
+                      // Modifica el renderizado de versículos para incluir el resaltado
+                      <TouchableOpacity
+                        key={item.id}
+                        onPress={() => toggleVerseSelection(item)}
+                        style={[
+                          styles.verseWrapper,
+                          selectedVerses.includes(item.id) && styles.selectedVerse,
+                          favoriteVerseIds.includes(item.id) && styles.favoritedVerse // Nuevo estilo
+                        ]}
+                      >
+                        <Text style={[
+                          styles.verseText, 
+                          { color: isDarkMode ? "white" : "#333" },
+                          favoriteVerseIds.includes(item.id) && styles.favoritedText // Nuevo estilo de texto
+                        ]}>
+                          <Text style={{ fontWeight: 'bold' }}>{item.number}.</Text>
+                          {item.verse}
+                          {selectedVerses.includes(item.id) && (
+                            <Icon name="checkmark-circle" size={16} color="#4CAF50" style={{ marginLeft: 10 }}/>
+                          )}
+                        </Text>
+                      </TouchableOpacity>
+                    ))
+                  ) : (
+                    <Text style={{ color: isDarkMode ? "white" : "black" }}>⚠️ {response.error}</Text>
+                  )}
+                </>
+              )}
+            </View>
+          )}
+        </Animated.ScrollView>
+        {/* Botón de compartir */}
+        {selectedVerses.length > 0 && (
+          <View style={styles.actionsContainer}>
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.favoriteButton, isSaving && styles.disabledButton]} 
+              onPress={user? handleAddToFavorites : () => navigation.navigate('LoginScreen')}
+              disabled={isSaving}
+            >
+              <Icon 
+                name={isSaving ? "time-outline" : (selectedVerses.some(v => favoriteVerseIds.includes(v)) ? "trash-outline" : "heart-outline")} 
+                size={24} 
+                color="white" 
+              />
+              <Text style={styles.actionText}>
+                {isSaving ? 'Guardando...' : (
+                  selectedVerses.some(v => favoriteVerseIds.includes(v)) 
+                    ? 'Eliminar favorito' 
+                    : 'Agregar favorito'
                 )}
-              </>
-            )}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.shareButton]} 
+              onPress={shareVerse}
+            >
+              <Icon name="share-social-outline" size={24} color="white" />
+              <Text style={styles.actionText}>Compartir</Text>
+            </TouchableOpacity>
           </View>
         )}
-      </Animated.ScrollView>
-      {/* Botón de compartir */}
-      {selectedVerses.length > 0 && (
-        <View style={styles.actionsContainer}>
-          <TouchableOpacity 
-            style={[styles.actionButton, styles.favoriteButton, isSaving && styles.disabledButton]} 
-            onPress={handleAddToFavorites}
-            disabled={isSaving}
-          >
-            <Icon 
-              name={isSaving ? "time-outline" : (selectedVerses.some(v => favoriteVerseIds.includes(v)) ? "trash-outline" : "heart-outline")} 
-              size={24} 
-              color="white" 
-            />
-            <Text style={styles.actionText}>
-              {isSaving ? 'Guardando...' : (
-                selectedVerses.some(v => favoriteVerseIds.includes(v)) 
-                  ? 'Eliminar favorito' 
-                  : 'Agregar favorito'
-              )}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={[styles.actionButton, styles.shareButton]} 
-            onPress={shareVerse}
-          >
-            <Icon name="share-social-outline" size={24} color="white" />
-            <Text style={styles.actionText}>Compartir</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-    </View>
+      </SafeAreaView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+  },
+  containerB: {
     flex: 1,
   },
   header: {

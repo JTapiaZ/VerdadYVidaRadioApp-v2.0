@@ -12,7 +12,16 @@
           "package_name": "com.verdadyvidaradio"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "923461091261-mi854nh47obbdgmblqveuardj7oreqpm.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.verdadyvidaradio",
+            "certificate_hash": "40795360681cbbf5fc146f8c50d467d83cf41ac3"
+          }
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyABWNRpOgMUfNWjioQeN7xpNUStFJjtDmc"
@@ -20,7 +29,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "923461091261-hmvlvn6tpddgm1ca38kv28qro4b9hmjn.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

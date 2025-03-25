@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   View, 
   Text, 
@@ -7,19 +7,28 @@ import {
   ScrollView, 
   TouchableOpacity, 
   Share,
-  Alert
+  Alert,
+  Animated,
+  Image
 } from 'react-native';
 import Video from 'react-native-video';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { doc, onSnapshot, deleteDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuth } from '../context/AuthContext';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const DevotionalDetailScreen = ({ route, navigation }) => {
   const { devotionalId } = route.params;
   const [devotional, setDevotional] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isFavorite, setIsFavorite] = useState(false);
+
+  const { user, signOut } = useAuth();
+    
+  // Dentro del componente:
+  const scaleValue = useRef(new Animated.Value(1)).current;
 
   // 1. Actualiza el useEffect de carga de favoritos
 useEffect(() => {
@@ -46,42 +55,69 @@ useEffect(() => {
   loadFavoriteStatus();
 }, [devotionalId]);
 
-  // 2. Modifica la función toggleFavorite
-const toggleFavorite = async () => {
-  try {
-    const userData = await AsyncStorage.getItem('user');
-    if (!userData) {
-      Alert.alert("Error", "Debes iniciar sesión para esta acción");
-      return;
-    }
-
-    const { email } = JSON.parse(userData);
-    const favoriteId = `${email}_devotional_${devotionalId}`;
-    const favoriteRef = doc(db, 'userFavorites', favoriteId);
-
-    if (isFavorite) {
-      // Eliminar de favoritos
-      await deleteDoc(favoriteRef);
+useEffect(() => {
+  const devotionalRef = doc(db, 'devotionals', devotionalId);
+  
+  const unsubscribe = onSnapshot(devotionalRef, (docSnapshot) => {
+    if (docSnapshot.exists()) {
+      const data = docSnapshot.data();
+      // Validar campos esenciales
+      if (!data.title || !data.content) {
+        console.log("Error", "Este devocional está corrupto");
+        navigation.goBack();
+        return;
+      }
+      setDevotional(data);
     } else {
-      // Agregar a favoritos
-      const devotionalData = {
-        userId: email,
-        type: "devotional",
-        data: {
-          id: devotionalId,
-          title: devotional.title,
-          content: devotional.content,
-          videoUrl: devotional.videoUrl || null,
-          createdAt: devotional.createdAt?.toDate() || new Date(),
-        }
-      };
-      await setDoc(favoriteRef, devotionalData);
+      console.log("Error", "El devocional ya no existe");
+      navigation.goBack();
     }
-  } catch (error) {
-    console.error("Error toggling favorite:", error);
-    Alert.alert("Error", "No se pudo actualizar el favorito");
-  }
-};
+    setLoading(false);
+  });
+
+  return () => unsubscribe();
+}, [devotionalId]);
+
+  // 2. Modifica la función toggleFavorite
+  const toggleFavorite = async () => {
+    try {
+      const userData = await AsyncStorage.getItem('user');
+      if (!userData) {
+        // Alert.alert("Error", "Debes iniciar sesión para guardar favoritos");
+        navigation.navigate("LoginScreen");
+        return;
+      }
+  
+      const { email } = JSON.parse(userData);
+      const favoriteId = `${email}_devotional_${devotionalId}`;
+      const favoriteRef = doc(db, 'userFavorites', favoriteId);
+  
+      if (isFavorite) {
+        // Eliminar de favoritos
+        await deleteDoc(favoriteRef);
+        Alert.alert('❤️ Eliminado', 'Devocional quitado de favoritos');
+      } else {
+        // Agregar a favoritos
+        const devotionalData = {
+          userId: email,
+          type: "devotional",
+          data: {
+            id: devotionalId,
+            title: devotional.title,
+            content: devotional.content,
+            videoUrl: devotional.videoUrl || "",
+            createdAt: devotional.createdAt?.toDate() || new Date(),
+          }
+        };
+        
+        await setDoc(favoriteRef, devotionalData);
+        Alert.alert('⭐ ¡Añadido!', 'Devocional guardado en favoritos');
+      }
+    } catch (error) {
+      console.error("Error al actualizar favorito:", error);
+      Alert.alert("❌ Error", "Intenta nuevamente");
+    }
+  };
 
   // Compartir devocional
   const handleShare = async () => {
@@ -94,21 +130,6 @@ const toggleFavorite = async () => {
       console.error('Error al compartir:', error);
     }
   };
-
-  useEffect(() => {
-    const devotionalRef = doc(db, 'devotionals', devotionalId);
-    
-    const unsubscribe = onSnapshot(devotionalRef, (docSnapshot) => {
-      if (docSnapshot.exists()) {
-        setDevotional(docSnapshot.data());
-      } else {
-        console.log('Documento no encontrado');
-      }
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, [devotionalId]);
 
   if (loading) {
     return (
@@ -126,8 +147,23 @@ const toggleFavorite = async () => {
     );
   }
 
+  const animateIcon = () => {
+    Animated.sequence([
+      Animated.timing(scaleValue, {
+        toValue: 1.3,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleValue, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -135,12 +171,19 @@ const toggleFavorite = async () => {
         </TouchableOpacity>
         
         <View style={styles.headerActions}>
-        <TouchableOpacity onPress={toggleFavorite} style={styles.iconButton}>
-          <Icon 
-            name={isFavorite ? "heart" : "heart-outline"} 
-            size={24} 
-            color={isFavorite ? "#ff4757" : "#333"} 
-          />
+        <TouchableOpacity 
+        style={styles.iconButton}
+        onPress={() => {
+          user? toggleFavorite() : navigation.navigate("LoginScreen");
+          animateIcon();
+        }}>
+          <Animated.View style={{ transform: [{ scale: scaleValue }] }}>
+            <Icon 
+              name={isFavorite ? "heart" : "heart-outline"} 
+              size={24} 
+              color={isFavorite ? "#ff4757" : "#333"} 
+            />
+          </Animated.View>
         </TouchableOpacity>
           
           <TouchableOpacity onPress={handleShare} style={styles.iconButton}>
@@ -150,7 +193,31 @@ const toggleFavorite = async () => {
       </View>
 
       {/* Contenido */}
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={[styles.content, { minHeight: '100%' }]}
+        >
+        {devotional.imageUrl && (
+          <Image
+            source={{ uri: devotional.imageUrl }}
+            style={{ width: '100%', height: 200, borderRadius: 15, marginBottom: 20 }}
+          />  
+        )}
+
+        <Text style={styles.title}>{devotional.title}</Text>
+        
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <Icon name="calendar" size={25} color="#555" style={{marginRight: 10,}} />
+          <Text style={styles.date}>{new Date(devotional.createdAt?.toDate()).toLocaleDateString()}</Text>
+        </View>
+
+        
+        
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <Icon name="person" size={25} color="#555" style={{marginRight: 10,}} />
+          <Text style={styles.pastor}>{devotional.pastor}</Text>
+        </View>
+        
         {devotional.videoUrl && (
           <Video
             source={{ uri: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" }}
@@ -168,14 +235,20 @@ const toggleFavorite = async () => {
           />  
         )}
         
-        <Text style={styles.title}>{devotional.title}</Text>
-        <Text style={styles.date}>{new Date(devotional.createdAt?.toDate()).toLocaleDateString()}</Text>
-        
-        <Text style={styles.contentText}>
-          {devotional.content}
-        </Text>
+        <View style={styles.paragraphContainer}>
+          {devotional.content
+            .replace(/\\n/g, '\n') // Convierte "\n" literal en saltos de línea reales
+            .split('\n')
+            .filter(paragraph => paragraph.trim() !== '')
+            .map((paragraph, index) => (
+              <Text key={index} style={styles.paragraph}>
+                {paragraph.trim()}
+              </Text>
+            ))
+          }
+        </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -183,6 +256,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+    marginBottom: 60,
   },
   loadingContainer: {
     flex: 1,
@@ -207,6 +281,7 @@ const styles = StyleSheet.create({
     padding: 5,
   },
   content: {
+    flexGrow: 1,
     padding: 20,
   },
   video: {
@@ -224,6 +299,13 @@ const styles = StyleSheet.create({
     lineHeight: 34,
   },
   date: {
+    top: 4,
+    fontSize: 14,
+    color: '#636e72',
+    marginBottom: 10,
+  },
+  pastor: {
+    top: 10,
     fontSize: 14,
     color: '#636e72',
     marginBottom: 25,
@@ -233,6 +315,15 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     color: '#2d3436',
     marginBottom: 30,
+  },
+  paragraphContainer: {
+    marginBottom: 30,
+  },
+  paragraph: {
+    fontSize: 16,
+    lineHeight: 24,
+    color: '#2d3436',
+    marginBottom: 15, // separación entre párrafos
   },
   errorText: {
     fontSize: 18,

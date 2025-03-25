@@ -8,6 +8,8 @@ import DevotionalDetailScreen from "../screens/DevotionalDetailScreen";
 import PreachingScreen from "../screens/PreachingScreen";
 import DonationScreen from "../screens/DonationScreen";
 import SiteInformationScreen from "../screens/SiteInformationScreen";
+import LoginScreen from "../screens/LoginScreen";
+import HomeScreen from "../screens/HomeScreen";
 
 const Stack = createStackNavigator();
 
@@ -37,6 +39,8 @@ const DevotionalStack = () => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Más" component={MoreScreen}  />
+      <Stack.Screen name="HomeScreen" component={HomeScreen} />
+      <Stack.Screen name="LoginScreen" component={LoginScreen}  />
       <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
       <Stack.Screen name="DevotionalsScreen" component={DevotionalsScreen} />
       <Stack.Screen name="DevotionalDetailScreen" component={DevotionalDetailScreen} />

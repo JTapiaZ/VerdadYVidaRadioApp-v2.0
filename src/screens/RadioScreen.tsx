@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
 import AudioPlayer from '../components/AudioPlayer';
 import { setupPlayer } from '../utils/trackPlayerSetup';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const track = [
   {
@@ -31,9 +32,9 @@ const PlayerScreen = () => {
   
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <AudioPlayer track={track} />
-    </View>
+    </SafeAreaView>
   );
 };
 

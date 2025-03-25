@@ -1,8 +1,10 @@
 import React, {useState, useEffect, useContext} from "react";
-import { View, Text, Image, TouchableOpacity, StyleSheet, Linking, ScrollView, ActivityIndicator, Alert } from "react-native";
+import { View, Text, Image, TouchableOpacity, StyleSheet, Linking, ScrollView, ActivityIndicator, Alert, StatusBar } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import Icon from "react-native-vector-icons/Ionicons";
 import { useBible } from "../context/BibleContext"; // Importamos el contexto
+import { useAuth } from "../context/AuthContext";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 // Diccionario para traducir nombres de libros
 const bookTranslations: Record<string, string> = {
@@ -82,6 +84,7 @@ const HomeScreen = () => {
   const [chapterDaily, setChapterDaily] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigation = useNavigation();
+  const { user, signOut } = useAuth();
 
   const { book, setBook, chapter, setChapter } = useBible(); // Obtenemos el estado del contexto
 
@@ -99,9 +102,12 @@ const HomeScreen = () => {
         
 
         setBookDailyEn(bookEn);
+        // console.log(bookEn, chapter, verseNum, fullReference);
+        
         
         const spanishVerse = await getVerseInSpanish(bookEn, chapter, verseNum);
-        console.log(spanishVerse);
+        // console.log(spanishVerse);
+        
         
         if (!spanishVerse) throw new Error("No se pudo obtener el versículo en español.");
 
@@ -126,14 +132,14 @@ const HomeScreen = () => {
   const getVerseFromOurManna = async () => {
     const response = await fetch("https://beta.ourmanna.com/api/v1/get/?format=json&order=daily");
     const data = await response.json();
+    // console.log(data.verse.details);
     return data.verse.details;
   };
 
   // 🔹 Extrae los detalles del versículo (libro, capítulo y versículo)
   const extractVerseDetails = (reference: string) => {
     // Expresión regular mejorada para manejar rangos y múltiples formatos
-    const match = reference.match(/^(\d*\-?\s?[A-Za-z\s\-]+)\s(\d+):(\d+[\-\d,]*)/);
-    console.log(match);
+    const match = reference.match(/^(\d*\-?\s?[A-Za-z\-]+)\s(\d+):(\d+[\-\d,]*)/);
     
     if (!match) throw new Error("Formato de referencia no válido");
   
@@ -141,7 +147,11 @@ const HomeScreen = () => {
     const chapter = match[2];
     const verses = match[3];  // Ahora acepta rangos (ej: 13-14, 15, 20-25)
 
-    // console.log(verses);
+    // console.log(book, chapter, verses);
+
+    if(book === "Psalm") {
+      book = "Psalms";
+    }
     
   
     // Normalizar el nombre del libro para la API
@@ -172,9 +182,15 @@ const HomeScreen = () => {
       `https://bible-api.deno.dev/api/read/rv1960/${book}/${chapter}/${verseRange}`
     );
     const data = await response.json();
-    console.log(data.verses);
+    // console.log(data);
     
-    return data?.map(v => v.verse).join(" ") || "";
+    if (Array.isArray(data)) {
+      return data.map(v => v.verse).join(" ");
+    } else if (data && data.verse) {
+      return data.verse;
+    } else {
+      return "";
+    }
   };
 
   // Función genérica para abrir redes sociales
@@ -189,22 +205,29 @@ const HomeScreen = () => {
           await Linking.openURL(webUrl);
         }
       } catch (error) {
-        Alert.alert('Error', 'No se pudo abrir el enlace');
+        Alert.alert('❌ Error', 'No se pudo abrir el enlace, verifica tu conexión a internet');
       }
     };
 
 
   return (
-    <View style={styles.container}>
-      {/* Botón de perfil flotante */}
-      <TouchableOpacity 
-        style={styles.profileIcon} 
-        onPress={() => navigation.navigate("ProfileScreen")}
-      >
-        <Icon name="person-circle-outline" size={40} color="#333" />
-      </TouchableOpacity>
-
-      <Text style={styles.textHeader}>¡Hola, Juan!</Text>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      <View style={styles.headerContainer}>
+        <Text style={styles.textHeader}>¡Hola, {user?.displayName || 'Usuario'}</Text>
+        {/* Botón de perfil flotante */}
+        <TouchableOpacity 
+          style={styles.profileIcon} 
+          onPress={user? () => navigation.navigate("ProfileScreen") : () => navigation.navigate("LoginScreen")}
+        >
+          {user?.photoURL ? 
+            <Image
+              source={{ uri: user.photoURL }}
+              style={styles.profileImage}
+            />      
+          : <Icon name="person-circle-outline" size={40} color="#333" />}
+        </TouchableOpacity>
+      </View>
 
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         {/* Logo */}
@@ -237,7 +260,7 @@ const HomeScreen = () => {
             <ActivityIndicator size="large" color="#007AFF" />
           ) : verse ? (
             <>
-              <Text style={styles.verseText}>📖 {verse}</Text>
+              <Text style={styles.verseText}>📖 "{verse}"</Text>
               <Text style={styles.referenceText}>{reference}</Text>
 
               {/* Botón para leer el capítulo completo usando el Context */}
@@ -278,37 +301,42 @@ const HomeScreen = () => {
           </View>
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView >
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 60,
   },
   scrollContainer: {
     top: 20,
     alignItems: "center",
     paddingBottom: 80,
   },
-  profileIcon: {
-    position: "absolute",
-    top: 6,
-    right: 20,
-    zIndex: 10,
-    borderRadius: 20,
-    padding: 5,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
+  headerContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingTop: 15, // Este padding se suma a la safe area
+    backgroundColor: "#fff",
   },
   textHeader: {
-    position: "absolute",
-    top: 14,
     fontSize: 20,
     fontWeight: "bold",
-    left: 20,
     color: "#333",
+    marginBottom: 10,
+  },
+  profileIcon: {
+    // Ya no lo posicionamos absolutamente
+    padding: 2,
+    marginBottom: 10,
+  },
+  profileImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 50,
   },
   logo: {
     width: 250,
@@ -346,12 +374,14 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     textAlign: "center",
     marginBottom: 10,
+    color: "#333",
   },
   verseText: {
     fontSize: 16,
     fontStyle: "italic",
     textAlign: "center",
     marginBottom: 5,
+    color: "#333",
   },
   verseReference: {
     fontSize: 14,
@@ -393,6 +423,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginTop: 5,
     marginBottom: 15,
+    color: "#333",
   },
   errorText: {
     fontSize: 14,

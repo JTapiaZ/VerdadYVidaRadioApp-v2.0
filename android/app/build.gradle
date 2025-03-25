@@ -87,16 +87,22 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         multiDexEnabled true
-        versionCode 1
-        versionName "1.0"
+        versionCode 6
+        versionName "2.0"
     }
     signingConfigs {
-        debug {
-            storeFile file('debug.keystore')
-            storePassword 'android'
-            keyAlias 'androiddebugkey'
-            keyPassword 'android'
+        release {
+            storeFile file('verdadyvidaradio.keystore')
+            storePassword 'MinisVyVR'
+            keyAlias 'mvv'
+            keyPassword 'MinisVyVR'
         }
+    //     release {
+    //     storeFile file("vyvrapp.jks")
+    //     storePassword "1020304050"
+    //     keyAlias "vyvrapp"
+    //     keyPassword "1020304050"
+    // }
     }
     buildTypes {
         debug {
@@ -106,6 +112,7 @@ android {
             // Caution! In production, you need to generate your own keystore file.
             // see https://reactnative.dev/docs/signed-apk-android.
             signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
