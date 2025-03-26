@@ -19,7 +19,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   GoogleSignin.configure({
     webClientId: '923461091261-hmvlvn6tpddgm1ca38kv28qro4b9hmjn.apps.googleusercontent.com',
-    scopes: ['https://www.googleapis.com/auth/drive.readonly'],
+    scopes: ['profile', 'email'],
     offlineAccess: true,
     hostedDomain: '',
     forceCodeForRefreshToken: false,

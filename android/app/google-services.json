@@ -14,11 +14,43 @@
       },
       "oauth_client": [
         {
+          "client_id": "923461091261-9fvs3acpaa0s93hgtbtl4jfsns978o9r.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.verdadyvidaradio",
+            "certificate_hash": "914264997caeb043b474e2d2e5011145b0a2190f"
+          }
+        },
+        {
+          "client_id": "923461091261-ci4kpatpr7danp8c8va6c1070qf0kvnn.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.verdadyvidaradio",
+            "certificate_hash": "526a46bfd511093d901576b6e4cace3ab383f37a"
+          }
+        },
+        {
           "client_id": "923461091261-mi854nh47obbdgmblqveuardj7oreqpm.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.verdadyvidaradio",
             "certificate_hash": "40795360681cbbf5fc146f8c50d467d83cf41ac3"
+          }
+        },
+        {
+          "client_id": "923461091261-mqdp0s12ppni1jqrevris0kiqb8oh388.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.verdadyvidaradio",
+            "certificate_hash": "9c1c21ac55ee6a899262b093cc16d9e158dc0609"
+          }
+        },
+        {
+          "client_id": "923461091261-oukqfb4ou84r8qgaevh4sqd7mjac0lnd.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.verdadyvidaradio",
+            "certificate_hash": "da9ba53f6da740f53cb69a3e041d608138c60826"
           }
         }
       ],
