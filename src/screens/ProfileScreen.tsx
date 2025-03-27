@@ -146,16 +146,16 @@ const ProfileScreen = ({ navigation, route }: NavigationProps) => {
       style={styles.card}
       onPress={() => {
         if (selectedCategory === 'devotionals') {
-          navigation.navigate('DevotionalDetailScreen', { 
+          navigation.navigate('Devocionales', { screen:'DevotionalDetailScreen', params: {
             devotionalId: item.id,
             title: item.title,
             content: item.content
-          });
+          }});
         } else {
           setBook(item.book || 'genesis');
           setChapter(item.chapter || 1);
           setSelectedVerses(item.number ? [item.number] : []);
-          navigation.navigate('Biblia');
+          navigation.navigate('Biblia', { screen: 'BibleScreen'});
         }
       }}
     >
@@ -241,7 +241,7 @@ const ProfileScreen = ({ navigation, route }: NavigationProps) => {
         console.log('Iniciando proceso...');
         await signOut();
         console.log('Proceso completado exitosamente');
-        navigation.navigate('LoginScreen');
+        navigation.navigate('Más', { screen: 'LoginScreen'})
       } catch (error) {
         // Alert.alert('Error', error.message);
         console.log('Error capturado en UI:', error);

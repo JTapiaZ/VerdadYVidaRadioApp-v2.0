@@ -1,6 +1,6 @@
 import React, {useState, useEffect, useContext} from "react";
 import { View, Text, Image, TouchableOpacity, StyleSheet, Linking, ScrollView, ActivityIndicator, Alert, StatusBar } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, CommonActions } from "@react-navigation/native";
 import Icon from "react-native-vector-icons/Ionicons";
 import { useBible } from "../context/BibleContext"; // Importamos el contexto
 import { useAuth } from "../context/AuthContext";
@@ -218,7 +218,7 @@ const HomeScreen = () => {
         {/* Botón de perfil flotante */}
         <TouchableOpacity 
           style={styles.profileIcon} 
-          onPress={user? () => navigation.navigate("ProfileScreen") : () => navigation.navigate("LoginScreen")}
+          onPress={user? () => navigation.navigate('Más', { screen: 'ProfileScreen'}) : () => navigation.navigate('Más', { screen: 'LoginScreen'})}
         >
           {user?.photoURL ? 
             <Image
@@ -238,18 +238,24 @@ const HomeScreen = () => {
           <Text style={styles.welcomeText}>¡Bienvenido a la App de Verdad y Vida Radio!</Text>
           <Text style={styles.subtitle}>Conéctate con la mejor música y mensajes inspiradores.</Text>
 
+
+          {/* Último Devocional */}
+          <TouchableOpacity style={styles.buttonSecondary} onPress={() => navigation.navigate('Devocionales', { screen: 'DevotionalScreen'})}>
+            <Text style={styles.buttonText}>📖 Último Devocional</Text>
+          </TouchableOpacity>
+          
           {/* Botón para escuchar en vivo */}
-          <TouchableOpacity style={styles.button} onPress={() => navigation.navigate("Radio")}> 
+          <TouchableOpacity 
+            style={styles.button} 
+            onPress={() => {
+              navigation.navigate('Radio', { screen: 'RadioScreen'});
+            }}
+          > 
             <Text style={styles.buttonText}>🎧 Escuchar en Vivo</Text>
           </TouchableOpacity>
 
-          {/* Último Devocional */}
-          <TouchableOpacity style={styles.buttonSecondary} onPress={() => navigation.navigate("DevotionalScreen")}> 
-            <Text style={styles.buttonText}>📖 Último Devocional</Text>
-          </TouchableOpacity>
-
           {/* Biblia */}
-          <TouchableOpacity style={styles.buttonSecondary} onPress={() => navigation.navigate("Biblia")}> 
+          <TouchableOpacity style={styles.buttonSecondary} onPress={() => navigation.navigate('Biblia', { screen: 'BibleScreen'})}> 
             <Text style={styles.buttonText}>📖 Biblia</Text>
           </TouchableOpacity>
         </View>
@@ -270,7 +276,7 @@ const HomeScreen = () => {
                   if (bookDailyEn && chapterDaily) {
                     setBook(bookDailyEn);
                     setChapter(chapterDaily);
-                    navigation.navigate("Biblia");
+                    navigation.navigate('Biblia', { screen: 'BibleScreen'});
                   }
                 }}
               >

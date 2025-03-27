@@ -90,14 +90,14 @@ const BookSelection = () => {
 
   const selectBook = (book) => {
     setBook(book.value); // Actualiza el estado global
-    navigation.navigate('ChapterSelectionScreen') // Pasa a la pantalla capitulo
+    navigation.navigate('Biblia', { screen: 'ChapterSelectionScreen'}) // Pasa a la pantalla capitulo
   };
 
   
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      <TouchableOpacity onPress={() => navigation.navigate('Biblia')} style={styles.backButton}>
+      <TouchableOpacity onPress={() => navigation.navigate('Biblia', { screen: 'BibleScreen'})} style={styles.backButton}>
         <Icon name="arrow-back" size={24} color="#333" />
       </TouchableOpacity>
       <TextInput
@@ -132,6 +132,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#F8F8F8",
     paddingHorizontal: 20,
     paddingVertical: 20,
+    paddingBottom: 90,
   },
   selectedItem: {
     backgroundColor: "#bbbbbb",

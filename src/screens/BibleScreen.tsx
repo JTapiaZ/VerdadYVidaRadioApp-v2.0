@@ -258,14 +258,14 @@ useEffect(() => {
         <Animated.View style={[styles.header, { backgroundColor: headerBackground }]}>
           <AnimatedTouchableOpacity 
             style={[styles.selectionButton, { borderColor: buttonBorderColor, backgroundColor: buttonBackgroundColor }]} 
-            onPress={() => navigation.navigate("BookSelectionScreen")}
+            onPress={() => navigation.navigate('Biblia', { screen: 'BookSelectionScreen'})}
           >
             <Text style={[styles.selectionText, { color: isDarkMode ? "#fff" : "#000" }]}>{bookName} {chapter}</Text>
           </AnimatedTouchableOpacity>
 
           <AnimatedTouchableOpacity 
             style={[styles.versionButton, { borderColor: buttonBorderColor, backgroundColor: buttonBackgroundColor }]} 
-            onPress={() => navigation.navigate("VersionSelectionScreen")}
+            onPress={() => navigation.navigate('Biblia', { screen: 'VersionSelectionScreen'})}
           >
             <Icon name="book-outline" size={24} color={isDarkMode ? "white" : "black"} />
           </AnimatedTouchableOpacity>
@@ -339,7 +339,7 @@ useEffect(() => {
           <View style={styles.actionsContainer}>
             <TouchableOpacity 
               style={[styles.actionButton, styles.favoriteButton, isSaving && styles.disabledButton]} 
-              onPress={user? handleAddToFavorites : () => navigation.navigate('LoginScreen')}
+              onPress={user? handleAddToFavorites : () => navigation.navigate('Más', { screen: 'LoginScreen'})}
               disabled={isSaving}
             >
               <Icon 
@@ -457,7 +457,7 @@ const styles = StyleSheet.create({
   },
   actionsContainer: {
     position: 'absolute',
-    bottom: 80,
+    bottom: 100,
     left: 0,
     right: 0,
     flexDirection: 'row',

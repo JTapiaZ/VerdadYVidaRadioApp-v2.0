@@ -84,7 +84,7 @@ useEffect(() => {
       const userData = await AsyncStorage.getItem('user');
       if (!userData) {
         // Alert.alert("Error", "Debes iniciar sesión para guardar favoritos");
-        navigation.navigate("LoginScreen");
+        navigation.navigate('Más', { screen: 'LoginScreen'});
         return;
       }
   
@@ -174,7 +174,7 @@ useEffect(() => {
         <TouchableOpacity 
         style={styles.iconButton}
         onPress={() => {
-          user? toggleFavorite() : navigation.navigate("LoginScreen");
+          user? toggleFavorite() : navigation.navigate('Más', { screen: 'LoginScreen'});
           animateIcon();
         }}>
           <Animated.View style={{ transform: [{ scale: scaleValue }] }}>

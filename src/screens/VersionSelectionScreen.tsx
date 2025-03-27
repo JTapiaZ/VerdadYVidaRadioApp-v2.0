@@ -33,12 +33,12 @@ const VersionSelection = () => {
     }
   
     // Regresa a BibleReader 
-    navigation.navigate("Biblia");
+    navigation.navigate('Biblia', { screen: 'BibleScreen'})
   };
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      <TouchableOpacity onPress={() => navigation.navigate('Biblia')} style={styles.backButton}>
+      <TouchableOpacity onPress={() => navigation.navigate('Biblia', { screen: 'BibleScreen'})} style={styles.backButton}>
         <Icon name="arrow-back" size={24} color="#333" />
       </TouchableOpacity>
       <TextInput

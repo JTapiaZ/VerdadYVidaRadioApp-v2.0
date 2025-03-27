@@ -92,12 +92,12 @@ const ChapterSelection = () => {
   // Manejar la selección de capítulo
   const selectChapter = (chapter: number) => {
     setChapter(chapter);
-    navigation.navigate("Biblia"); // Volver a la pantalla principal de lectura
+    navigation.navigate('Biblia', { screen: 'BibleScreen'}); // Volver a la pantalla principal de lectura
   };
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      <TouchableOpacity onPress={() => navigation.navigate("BookSelectionScreen")} style={styles.backButton}>
+      <TouchableOpacity onPress={() => navigation.navigate('Biblia', { screen: 'BookSelectionScreen'})} style={styles.backButton}>
         <Icon name="arrow-back" size={24} color="#333" />
       </TouchableOpacity>
       <Text style={styles.title}>Selecciona un capítulo de {bookName}:</Text>
@@ -145,6 +145,7 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: 15,
+    color: "#fff",
   },
 });
 

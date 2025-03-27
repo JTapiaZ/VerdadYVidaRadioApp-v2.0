@@ -11,7 +11,6 @@ const DevotionalStack = () => {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="DevotionalScreen" component={DevotionalScreen} />
       <Stack.Screen name="DevotionalDetailScreen" component={DevotionalDetailScreen} />
-      <Stack.Screen name="LoginScreen" component={LoginScreen} />
     </Stack.Navigator>
   );
 };

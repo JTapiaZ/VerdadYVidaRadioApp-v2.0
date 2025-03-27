@@ -152,7 +152,8 @@ const filteredDevotionals = devotionals.filter(item => {
   // Render Item mejorado
   const renderItem = ({ item }) => (
     <TouchableOpacity 
-      onPress={() => navigation.navigate('DevotionalDetailScreen', { devotionalId: item.id, devotional: item })}
+      onPress={() => navigation.navigate('Devocionales', { screen: 'DevotionalDetailScreen', params: { devotionalId: item.id, devotional: item } })}
+      // onPress={() => navigation.navigate('DevotionalDetailScreen', { devotionalId: item.id, devotional: item })}
     >
     <View style={styles.card}>
     {item.imageUrl && (
@@ -185,7 +186,7 @@ const filteredDevotionals = devotionals.filter(item => {
         </View>
         
         <View style={styles.actions}>
-        <TouchableOpacity onPress={user? () => toggleFavorite(item) : () => navigation.navigate("LoginScreen")}>
+        <TouchableOpacity onPress={user? () => toggleFavorite(item) : () => navigation.navigate('Más', { screen: 'LoginScreen' })}>
           <Icon 
             name={favorites[item.id] ? "heart" : "heart-outline"}
             size={24} 

@@ -16,7 +16,7 @@ const LoginScreen = () => {
       console.log('Iniciando proceso...');
       await signIn();
       console.log('Proceso completado exitosamente');
-      navigation.navigate('HomeScreen');
+      navigation.navigate('Inicio', { screen: 'HomeScreen'});
     } catch (error) {
       // Alert.alert('Error', error.message);
       console.log('Error capturado en UI:', error);

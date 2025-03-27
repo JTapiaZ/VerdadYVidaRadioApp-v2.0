@@ -30,7 +30,7 @@ const MoreScreen = () => {
       {/* Header personalizado */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Más</Text>
-        <TouchableOpacity style={styles.donateButton} onPress={() => navigation.navigate("DonationScreen")}>
+        <TouchableOpacity style={styles.donateButton} onPress={() => navigation.navigate('Más', { screen: 'DonationScreen'})}>
           <Icon name="heart" size={18} color="black" />
           <Text style={styles.donateText}>Donar Ahora</Text>
         </TouchableOpacity>
@@ -39,26 +39,27 @@ const MoreScreen = () => {
       {/* Contenido */}
       <ScrollView contentContainerStyle={{ padding: 15 }} style={{ flex: 1 }}>
         {/* Sección de Acciones */}
-        <TouchableOpacity style={styles.item} onPress={user? () => navigation.navigate("ProfileScreen") : () => navigation.navigate("LoginScreen")}>
+        <TouchableOpacity style={styles.item} onPress={user? () => navigation.navigate('Más', { screen: 'ProfileScreen'}) : () => navigation.navigate('Más', { screen: 'LoginScreen'})}>
           <Icon name="person-circle-outline" size={35} color="#555" style={styles.icon} />
           <Text style={styles.itemText}>{user?.displayName || 'Iniciar Sesión'}</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.item} onPress={user? () => navigation.navigate("ProfileScreen", { initialCategory: 'verses' }) : () => navigation.navigate("LoginScreen")}>
+        <TouchableOpacity style={styles.item} onPress={user? () => navigation.navigate('Más', { screen: 'LoginScreen', initialCategory: 'verses'}) : () => navigation.navigate('Más', { screen: 'LoginScreen'})}>
+        {/* <TouchableOpacity style={styles.item} onPress={user? () => navigation.navigate("ProfileScreen", { initialCategory: 'verses' }) : () => navigation.navigate('Más', { screen: 'LoginScreen'})}> */}
           <Icon name="heart-outline" size={24} color="#555" style={styles.icon} />
           <Text style={styles.itemText}>Versículos favoritos</Text>
         </TouchableOpacity>
         
         {/* Sección de Contenido */}
         <View style={styles.separator} />
-        <TouchableOpacity style={styles.item} onPress={() => navigation.navigate("Predicaciones") }>
+        <TouchableOpacity style={styles.item} onPress={() => navigation.navigate('Más', { screen: 'Predicaciones'}) }>
           <Icon name="videocam-outline" size={24} color="#555" style={styles.icon} />
           <Text style={styles.itemText}>Predicaciones</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.item} onPress={() => navigation.navigate("RadioContentScreen") }>
+        <TouchableOpacity style={styles.item} onPress={() => navigation.navigate('Más', { screen: 'RadioContentScreen'}) }>
           <Icon name="mic-outline" size={24} color="#555" style={styles.icon} />
           <Text style={styles.itemText}>Podcast</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.item} onPress={() => navigation.navigate("DevotionalsScreen") }>
+        <TouchableOpacity style={styles.item} onPress={() => navigation.navigate('Devocionales', { screen: 'DevotionalScreen'}) }>
           <Icon name="book-outline" size={24} color="#555" style={styles.icon} />
           <Text style={styles.itemText}>Devocionales</Text>
         </TouchableOpacity>
@@ -69,14 +70,14 @@ const MoreScreen = () => {
           <Icon name="heart-outline" size={24} color="#555" style={styles.icon} />
           <Text style={styles.itemText}>Donar a nuestra Fundación</Text>
         </TouchableOpacity> */}
-        <TouchableOpacity style={styles.item} onPress={() => navigation.navigate("DonationScreen") }>
+        <TouchableOpacity style={styles.item} onPress={() => navigation.navigate('Más', { screen: 'DonationScreen'}) }>
           <Icon name="heart-outline" size={24} color="#555" style={styles.icon} />
           <Text style={styles.itemText}>Donar a la emisora</Text>
         </TouchableOpacity>
 
         {/* Sección de Información */}
         <View style={styles.separator} />
-        <TouchableOpacity style={styles.item} onPress={() => navigation.navigate("SiteInformationScreen") }>
+        <TouchableOpacity style={styles.item} onPress={() => navigation.navigate('Más', { screen: 'SiteInformationScreen'}) }>
           <Icon name="location-outline" size={24} color="#555" style={styles.icon} />
           <Text style={styles.itemText}>Información de nuestras sedes</Text>
         </TouchableOpacity>
