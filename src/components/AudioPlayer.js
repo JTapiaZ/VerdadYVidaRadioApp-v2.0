@@ -13,13 +13,21 @@ const tracks = [
   {
     id: 0,
     url: 'https://stream.zeno.fm/zznllllp06cuv',
-    title: 'Verdad y Vida Radio 870',
+    title: 'Verdad y Vida Radio 870 AM',
     artist: 'Verdad y Vida Radio',
     artwork: require('../../assets/img/870.jpg'), // 📌 Imagen local
     duration: 999999, // 📌 Duración en segundos
   },
   {
     id: 1,
+    url: 'https://stream.zeno.fm/vvon5xkmvhwvv',
+    title: 'Verdad y Vida Radio 100.1 FM',
+    artist: 'Verdad y Vida Radio',
+    artwork: require('../../assets/img/1001.jpg'), // 📌 Otra imagen
+    duration: 999999, // 📌 Duración en segundos
+  },
+  {
+    id: 2,
     url: 'https://stream.zeno.fm/n590rdbh62uuv',
     title: 'Verdad y Vida Radio Online',
     artist: 'Verdad y Vida Radio',

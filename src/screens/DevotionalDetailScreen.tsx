@@ -220,7 +220,7 @@ useEffect(() => {
         
         {devotional.videoUrl && (
           <Video
-            source={{ uri: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" }}
+            source={{ uri: devotional.videoUrl }}
             style={styles.video}
             controls
             resizeMode="contain"

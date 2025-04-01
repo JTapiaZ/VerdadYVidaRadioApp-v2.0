@@ -12,7 +12,7 @@ import { firebaseConfig } from "./src/firebaseConfig";
 import messaging from "@react-native-firebase/messaging"; // Firebase
 import { requestNotificationPermission, getFCMToken } from "./src/NotificationService"; // Servicio de notificaciones
 import { AuthProvider } from "./src/context/AuthContext";
-
+import InternetCheck from './src/components/InternetCheck'; // Componente de verificación de conexión
 
 // 🔥 Inicializar Firebase
 const app = initializeApp(firebaseConfig);
@@ -25,10 +25,10 @@ export { db };
 
 const App = () => {
   useEffect(() => {
-    // ✅ Pedir permisos para recibir notificaciones
+    // Pedir permisos para recibir notificaciones
     requestNotificationPermission();
 
-    // ✅ Obtener y mostrar el token de FCM
+    // Obtener y mostrar el token de FCM
     getFCMToken().then((token) => {
       if (token) {
         console.log("🔹 FCM Token:", token);
@@ -37,17 +37,25 @@ const App = () => {
       }
     });
 
-    // ✅ Escuchar notificaciones en primer plano (cuando la app está abierta)
-    const unsubscribe = messaging().onMessage(async (remoteMessage) => {
+    // Suscribirse al topic "all" para recibir notificaciones enviadas a ese topic
+    messaging()
+      .subscribeToTopic('all')
+      .then(() => console.log('Suscrito al topic "all"'))
+      .catch((error) => console.error('Error suscribiéndose al topic:', error));
+
+    // Escuchar notificaciones en primer plano (cuando la app está abierta)
+    const unsubscribeForeground = messaging().onMessage(async (remoteMessage) => {
       Alert.alert("📩 Nueva Notificación", remoteMessage.notification?.title || "Sin título");
     });
 
-    // ✅ Escuchar notificaciones en segundo plano o cuando la app está cerrada
+    // Escuchar notificaciones en segundo plano o cuando la app está cerrada
     messaging().setBackgroundMessageHandler(async (remoteMessage) => {
       console.log("📩 Notificación recibida en segundo plano:", remoteMessage);
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribeForeground();
+    };
   }, []);
 
   return (
@@ -58,6 +66,7 @@ const App = () => {
             <BottomTabNavigator />
           </NavigationContainer>
         </BibleProvider>
+        <InternetCheck />
       </AuthProvider>
     </SafeAreaProvider>
   );
