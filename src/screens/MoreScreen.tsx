@@ -55,7 +55,7 @@ const MoreScreen = () => {
           <Icon name="videocam-outline" size={24} color="#555" style={styles.icon} />
           <Text style={styles.itemText}>Predicaciones</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.item} onPress={() => navigation.navigate('Más', { screen: 'RadioContentScreen'}) }>
+        <TouchableOpacity style={styles.item} onPress={() => navigation.navigate('Más', { screen: 'PodcastScreen'}) }>
           <Icon name="mic-outline" size={24} color="#555" style={styles.icon} />
           <Text style={styles.itemText}>Podcast</Text>
         </TouchableOpacity>

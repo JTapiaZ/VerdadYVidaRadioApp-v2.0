@@ -7,7 +7,7 @@ import { books } from './BookSelectionScreen'
 import { useBible } from "../context/BibleContext";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const chaptersByBook = {
+export const chaptersByBook = {
   Genesis: 50,
   Exodus: 40,
   Leviticus: 27,
@@ -96,7 +96,7 @@ const ChapterSelection = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
       <TouchableOpacity onPress={() => navigation.navigate('Biblia', { screen: 'BookSelectionScreen'})} style={styles.backButton}>
         <Icon name="arrow-back" size={24} color="#333" />
       </TouchableOpacity>
@@ -120,9 +120,9 @@ const ChapterSelection = () => {
 
 const styles = StyleSheet.create({
   container: {
-    top: 10,
     flex: 1,
     padding: 40,
+    marginBottom: 40,
   },
   backButton: {
     marginBottom: 10,

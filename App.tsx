@@ -1,9 +1,10 @@
 import React, { useEffect } from "react";
-import { Text, Alert, Platform } from "react-native";
+import { Text, Alert, Platform, PermissionsAndroid } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import BottomTabNavigator from "./src/navigation/BottomTabNavigator";
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { BibleProvider } from "./src/context/BibleContext"; // Contexto
+import { check, request, PERMISSIONS, RESULTS } from 'react-native-permissions';
 
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
@@ -13,6 +14,7 @@ import messaging from "@react-native-firebase/messaging"; // Firebase
 import { requestNotificationPermission, getFCMToken } from "./src/NotificationService"; // Servicio de notificaciones
 import { AuthProvider } from "./src/context/AuthContext";
 import InternetCheck from './src/components/InternetCheck'; // Componente de verificación de conexión
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // 🔥 Inicializar Firebase
 const app = initializeApp(firebaseConfig);
@@ -24,9 +26,56 @@ export { db };
 (Text as any).defaultProps.style = { fontFamily: "UntitledSerif-Regular" };
 
 const App = () => {
+
+  useEffect(() => {
+    const checkAndRequestPermission = async () => {
+      // 1. Verificar estado actual del permiso
+      let status;
+      
+      if (Platform.OS === 'ios') {
+        status = await check(PERMISSIONS.IOS.USER_NOTIFICATIONS);
+      } else {
+        if (Platform.Version >= 33) {
+          status = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS);
+        } else {
+          status = RESULTS.GRANTED; // Android <13 no requiere permiso
+        }
+      }
+  
+      // 2. Si ya tiene permiso, no hacer nada
+      if (status === RESULTS.GRANTED) return;
+  
+      // 3. Verificar si ya se mostró la alerta antes (usando AsyncStorage)
+      const hasAsked = await AsyncStorage.getItem('notificationsAsked');
+      
+      if (!hasAsked) {
+        Alert.alert(
+          '🔔 Activar las notificaciones',
+          '¿Permites que te enviemos notificaciones sobre un nuevo devocional y demás?',
+          [
+            { 
+              text: 'No', 
+              style: 'cancel',
+              onPress: () => AsyncStorage.setItem('notificationsAsked', 'true'), // Marcar como preguntado
+            },
+            { 
+              text: 'Sí', 
+              onPress: async () => {
+                await requestNotificationPermission(); // Solicitar permiso
+                AsyncStorage.setItem('notificationsAsked', 'true'); // Marcar como preguntado
+              },
+            },
+          ]
+        );
+      }
+    };
+  
+    checkAndRequestPermission();
+  }, []);
+
   useEffect(() => {
     // Pedir permisos para recibir notificaciones
-    requestNotificationPermission();
+    // requestNotificationPermission();
 
     // Obtener y mostrar el token de FCM
     getFCMToken().then((token) => {
@@ -57,6 +106,35 @@ const App = () => {
       unsubscribeForeground();
     };
   }, []);
+
+  // Función para solicitar permisos
+  const requestNotificationPermission = async () => {
+    let status;
+    
+    if (Platform.OS === 'ios') {
+      // Para iOS
+      status = await request(PERMISSIONS.IOS.USER_NOTIFICATIONS);
+    } else {
+      // Para Android (API 33+)
+      if (Platform.Version >= 33) {
+        status = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
+        );
+      } else {
+        // En versiones anteriores no se requiere solicitud
+        status = 'granted';
+      }
+    }
+
+    // Manejar resultado
+    if (status === RESULTS.GRANTED || status === 'granted') {
+      console.log('Permiso concedido ✅');
+    } else {
+      console.log('Permiso denegado ❌');
+      // Opcional: Abrir configuración de la app
+      // Linking.openSettings();
+    }
+  };
 
   return (
     <SafeAreaProvider>

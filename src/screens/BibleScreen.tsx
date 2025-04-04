@@ -9,6 +9,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { collection, addDoc, query, where, onSnapshot, doc, deleteDoc, setDoc, getDocs } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import { useAuth } from "../context/AuthContext";
+import { chaptersByBook } from "./ChapterSelectionScreen";
 
 
 
@@ -22,7 +23,7 @@ interface Verse {
 }
 
 const BibleReader = () => {
-  const { verse, selectedVerses, setSelectedVerses } = useBible(); // Obtener versículo del contexto
+  const { verse, selectedVerses, setSelectedVerses, setChapter } = useBible(); // Obtener versículo del contexto
   const { version, book, chapter } = useBible();
   const { user, signOut } = useAuth();
   
@@ -128,6 +129,24 @@ useEffect(() => {
 
   const bookInfo = books.find((b) => b.value === book);
   const bookName = bookInfo ? bookInfo.name : book;
+
+  // Reemplázala por:
+  const maxChapters = chaptersByBook[book] || 1;
+  
+
+  // Funciones para cambiar capítulo
+  const handlePreviousChapter = () => {
+    if (chapter > 1) {
+      setChapter(chapter - 1);
+    }
+  };
+  
+  const handleNextChapter = () => {
+    const max = chaptersByBook[book] || 1;
+    if (chapter < max) {
+      setChapter(chapter + 1);
+    }
+  };
 
   // Versión CORREGIDA - BibleScreen.tsx
   const toggleVerseSelection = (verse: Verse) => {
@@ -252,7 +271,7 @@ useEffect(() => {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
       <SafeAreaView style={[styles.containerB, { backgroundColor: isDarkMode ? "#000" : "rgba(230, 230, 230, 0)" }]}>
         {/* Header animado */}
         <Animated.View style={[styles.header, { backgroundColor: headerBackground }]}>
@@ -334,6 +353,34 @@ useEffect(() => {
             </View>
           )}
         </Animated.ScrollView>
+        {/* Botones de navegación de capítulo - MOVER AQUÍ */}
+        {selectedVerses.length === 0 && (
+          <View style={[styles.chapterNavigation, { bottom: insets.bottom + 20 }]}>
+            <TouchableOpacity 
+              style={[
+                styles.chapterButton, 
+                chapter === 1 && styles.disabledButton,
+                { backgroundColor: isDarkMode ? '#444' : '#e3e4e5' }
+              ]} 
+              onPress={handlePreviousChapter}
+              disabled={chapter === 1}
+            >
+              <Icon name="chevron-back" size={24} color={isDarkMode ? (chapter === 1 ? '#666' : 'white') : (chapter === 1 ? '#999' : '#333')} />
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={[
+                styles.chapterButton, 
+                chapter === maxChapters && styles.disabledButton,
+                { backgroundColor: isDarkMode ? '#444' : '#e3e4e5' }
+              ]} 
+              onPress={handleNextChapter}
+              disabled={chapter === maxChapters}
+            >
+              <Icon name="chevron-forward" size={24} color={isDarkMode ? (chapter === maxChapters ? '#666' : 'white') : (chapter === maxChapters ? '#999' : '#333')} />
+            </TouchableOpacity>
+          </View>
+        )}
         {/* Botón de compartir */}
         {selectedVerses.length > 0 && (
           <View style={styles.actionsContainer}>
@@ -492,6 +539,28 @@ const styles = StyleSheet.create({
   favoritedText: {
     color: '#FFD700', // Texto dorado
     fontStyle: 'italic',
+  },
+  chapterNavigation: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    zIndex: 20, // Añadir esto
+    marginBottom: 50, // Ajustar posición
+  },
+  chapterButton: {
+    padding: 12,
+    borderRadius: 30,
+    width: 50,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+  },
+  disabledButtonChapter: {
+    opacity: 0.5,
   },
 });
 
