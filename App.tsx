@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { Text, Alert, Platform, PermissionsAndroid } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
+import { navigationRef } from "./src/navigation/NavigationService";
 import BottomTabNavigator from "./src/navigation/BottomTabNavigator";
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { BibleProvider } from "./src/context/BibleContext"; // Contexto
@@ -10,6 +11,7 @@ import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { firebaseConfig } from "./src/firebaseConfig";
 
+import { navigate } from './src/navigation/NavigationService';
 import messaging from "@react-native-firebase/messaging"; // Firebase
 import { requestNotificationPermission, getFCMToken } from "./src/NotificationService"; // Servicio de notificaciones
 import { AuthProvider } from "./src/context/AuthContext";
@@ -136,11 +138,43 @@ const App = () => {
     }
   };
 
+  useEffect(() => {
+    // App en background y usuario toca la notificación
+    const unsubscribe = messaging().onNotificationOpenedApp(remoteMessage => {
+      handleNotificationNavigation(remoteMessage);
+    });
+
+    // App cerrada y usuario la abre tocando la notificación
+    messaging().getInitialNotification().then(remoteMessage => {
+      if (remoteMessage) {
+        handleNotificationNavigation(remoteMessage);
+      }
+    });
+
+    return unsubscribe;
+  }, []);
+
+  const handleNotificationNavigation = (remoteMessage) => {
+  // Esperamos que envíes en el payload:
+  // { data: { screen: 'DevotionalDetailScreen', devotionalId: '123' } }
+
+  const screen = remoteMessage?.data?.screen;
+  const devotionalId = remoteMessage?.data?.devotionalId;
+
+  if (screen === "DevotionalDetailScreen" && devotionalId) {
+    // Navegar a la pantalla anidada
+    navigate('Devocionales', {
+      screen: 'DevotionalDetailScreen',
+      params: { devotionalId }
+    });
+  }
+};
+
   return (
     <SafeAreaProvider>
       <AuthProvider>
         <BibleProvider>
-          <NavigationContainer>
+          <NavigationContainer ref={navigationRef}>
             <BottomTabNavigator />
           </NavigationContainer>
         </BibleProvider>
