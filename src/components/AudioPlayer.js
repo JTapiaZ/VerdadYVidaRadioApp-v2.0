@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, TouchableOpacity, Text, StyleSheet, Image, Dimensions, Share, TouchableWithoutFeedback, ActivityIndicator, Alert } from 'react-native';
+import { View, TouchableOpacity, Text, StyleSheet, Image, Dimensions, Share, TouchableWithoutFeedback, ActivityIndicator, Alert, ScrollView, SafeAreaView } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Slider from '@react-native-community/slider';
 import TrackPlayer, { State, useProgress, useTrackPlayerEvents, Event } from 'react-native-track-player';
@@ -285,12 +285,22 @@ const AudioPlayer = () => {
     };
 
     return (
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#164b7f' }}>
         <TouchableWithoutFeedback onPress={() => setMenuVisible(false)}>
             <LinearGradient
                 colors={['#164b7f', '#fff']}
                 style={styles.gradientBackground}
             >
-                <View style={{ flex: 1, position: "relative" }} pointerEvents="box-none">
+                <ScrollView
+                    contentContainerStyle={{
+                        flexGrow: 1,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        paddingVertical: 24, // puedes ajustar el padding
+                    }}
+                    showsVerticalScrollIndicator={false}
+                >
+                <View pointerEvents="box-none">
                     <Image source={currentTrack.artwork} style={styles.albumArt} />
                     <Text style={styles.title}>{currentTrack.title}</Text>
                     <Text style={styles.description}>La radio que llena tu vida</Text>
@@ -367,27 +377,26 @@ const AudioPlayer = () => {
                         </View>
                     )}
                 </View>
-
+                </ScrollView>
             </LinearGradient>
         </TouchableWithoutFeedback>
+        </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
     gradientBackground: {
         flex: 1,
-        height: '50%',
         width: '100%',
         justifyContent: 'center',
         alignItems: 'center',
-        paddingBottom: 80,
     },
     container: {
         alignItems: 'center',
         justifyContent: 'center',
     },
     albumArt: {
-        top: 75,
+        marginTop: 55,
         width: 300,
         height: 300,
         borderRadius: 10,
@@ -397,20 +406,17 @@ const styles = StyleSheet.create({
     title: {
         textAlign: 'center',
         alignSelf: 'center',
-        top: 80,
         fontSize: 20,
         fontWeight: 'bold',
         marginBottom: 10,
         color: '#333',
     },
     progressContainer: {
-        top: 70,
         width: '100%',
         paddingHorizontal: 20,
         alignItems: 'center',
     },
     slider: {
-        marginTop: 5,
         width: 330,
         height: 40,
         color: '#000',
@@ -422,7 +428,6 @@ const styles = StyleSheet.create({
         paddingHorizontal: 10,
     },
     controls: {
-        top: 80,
         alignSelf: 'center',
         flexDirection: 'row',
         alignItems: 'center',
@@ -431,7 +436,6 @@ const styles = StyleSheet.create({
     },
     share: {
         alignSelf: 'center',
-        top: 70,
         zIndex: 10,
     },
     playButton: {
@@ -445,14 +449,13 @@ const styles = StyleSheet.create({
         zIndex: 10,
     },
     description: {
-        top: 70,
         alignSelf: 'center',
         fontSize: 13,
         color: '#5c5c5c',
         marginBottom: 20,
     },
     liveButtonContainer: {
-        top: 90,
+        marginTop: 10,
         width: 120,
         alignSelf: 'center',
         borderRadius: 20,
@@ -470,13 +473,12 @@ const styles = StyleSheet.create({
     },
     menuButton: {
         position: "absolute",
-        top: 20,
-        right: 10,
+        right: 15,
         zIndex: 10,
     },
     dropdownMenu: {
         position: "absolute",
-        top: 50,
+        marginTop: 50,
         right: 20,
         backgroundColor: "#fff",
         padding: 10,
