@@ -5,7 +5,7 @@ import Slider from '@react-native-community/slider';
 import TrackPlayer, { State, useProgress, useTrackPlayerEvents, Event } from 'react-native-track-player';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { setupPlayer } from '../utils/trackPlayerSetup'; // Asumo que tienes esta función
-import Netinform from '@react-native-community/netinfo';
+import Netinfo from '@react-native-community/netinfo';
 
 const { width, height } = Dimensions.get('window');
 
@@ -37,7 +37,6 @@ const tracks = [
 ];
 
 const AudioPlayer = () => {
-    const [playbackState, setPlaybackState] = useState(State.Stopped);
     const [isReady, setIsReady] = useState(false);
     const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
     const currentTrack = tracks[currentTrackIndex];
@@ -45,206 +44,158 @@ const AudioPlayer = () => {
     const [menuVisible, setMenuVisible] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const progress = useProgress();
-    const retryCount = useRef(0); // 📌 Contador de reintentos
-    const maxRetries = 5; // 📌 Número máximo de reintentos
-    const retryDelayBase = 10000; // 📌 Tiempo base para el primer reintento (ms)
-    const autoRetryEnabled = useRef(true); // 📌 Controla si los reintentos automáticos están habilitados
+    const retryCount = useRef(0);
+    const maxRetries = 5;
+    const retryDelayBase = 10000;
+    const userInitiatedPause = useRef(false);
+    const bufferingTimeout = useRef(null);
+    const wasConnected = useRef(true);
 
-    useTrackPlayerEvents([Event.PlaybackState, Event.PlaybackError], (event) => {
-        if (event.type === Event.PlaybackState) {
-            setIsLoading(event.state === State.Buffering || event.state === State.Connecting);
-            setIsPlaying(event.state === State.Playing);
-            setPlaybackState(event.state);
-
-            // 📌 Lógica de reintento automático
-            if (autoRetryEnabled.current) {
-                if (event.state === State.Buffering || event.state === State.Connecting) {
-                    // Si se está cargando, reiniciamos el contador de reintentos
-                    retryCount.current = 0;
-                } else if (event.state === State.Paused && isPlaying) {
-                    // Si se pausa inesperadamente mientras estaba reproduciendo, intentamos reanudar
-                    if (retryCount.current < maxRetries) {
-                        const delay = retryDelayBase * Math.pow(2, retryCount.current);
-                        console.log(`⚠️ Pausa inesperada, reintentando en ${delay / 1000} segundos...`);
-                        setTimeout(() => {
-                            TrackPlayer.play();
-                            retryCount.current += 1;
-                            Alert.alert(
-                                'Reintentando conexión',
-                                `La reproducción se detuvo inesperadamente. Intentando reconectar...`,
-                                [
-                                    {
-                                        text: 'OK',
-                                        onPress: () => {
-                                            autoRetryEnabled.current = false;
-                                            console.log('🛑 Reintentos automáticos desactivados por el usuario.');
-                                        },
-                                    },
-                                ],
-                            );
-                        }, delay);
-                    } else {
-                        console.log('🛑 Demasiados reintentos, deteniendo la reproducción.');
-                        Alert.alert(
-                            '❌ Error de conexión',
-                            'La reproducción no se pudo reanudar después de varios intentos. Por favor, verifica tu conexión a internet o reinicia la aplicación.',
-                            [
-                                {
-                                    text: 'OK',
-                                    onPress: () => {
-                                        autoRetryEnabled.current = false;
-                                        console.log('🛑 Reintentos automáticos desactivados por el usuario.');
-                                    },
-                                },
-                            ],
-                        );
-                        // Aquí podrías detener la reproducción o mostrar un estado de error
-                    }
-                }
-            }
-        } else if (event.type === Event.PlaybackError) {
-            console.error('❌ Error de reproducción:', event.error);
-            
-
-            if (autoRetryEnabled.current) {
-              Netinform.fetch().then((state) => {
-                if (!state.isConnected) {
-                    Alert.alert(
-                        '❌ Error de conexión',
-                        'Hubo un problema con la conexión a internet. Por favor, verifica tu conexión y vuelve a intentarlo. Reintentando en 10 segundos...',
-                        [
-                            {
-                                text: 'OK',
-                                onPress: () => {
-                                    autoRetryEnabled.current = false;
-                                    console.log('🛑 Reintentos automáticos desactivados por el usuario.');
-                                },
-                            },
-                        ],
-                    );
-                } else {
-                    Alert.alert(
-                        'Error de reproducción',
-                        `Ocurrió un error al intentar reproducir la radio. Intentando reconectar...`,
-                        [
-                            {
-                                text: 'OK',
-                                onPress: () => {
-                                    autoRetryEnabled.current = false;
-                                    console.log('🛑 Reintentos automáticos desactivados por el usuario.');
-                                },
-                            },
-                        ],
-                    );
-                }
-              })
-
-                if (retryCount.current < maxRetries && autoRetryEnabled.current) {
-                    const delay = retryDelayBase * Math.pow(2, retryCount.current);
-                    console.log(`⚠️ Error de reproducción, reintentando en ${delay / 1000} segundos (intento <span class="math-inline">\{retryCount\.current \+ 1\}/</span>{maxRetries})...`);
-                    setTimeout(() => {
-                        TrackPlayer.play();
-                        retryCount.current += 1;
-                    }, delay);
-                } else if (!autoRetryEnabled.current) {
-                    console.log('🛑 Reintento automático desactivado, no se intentará de nuevo.');
-                } else {
-                    console.log('🛑 Demasiados errores, deteniendo la reproducción.');
-                    Alert.alert(
-                        'Error persistente',
-                        'La reproducción no se pudo iniciar debido a múltiples errores. Por favor, verifica tu conexión a internet o intenta más tarde.',
-                        [
-                            {
-                                text: 'OK',
-                                onPress: () => {
-                                    autoRetryEnabled.current = false;
-                                    console.log('🛑 Reintentos automáticos desactivados por el usuario.');
-                                },
-                            },
-                        ],
-                    );
-                    // Aquí podrías detener la reproducción o mostrar un estado de error
-                }
-            }
-        }
-    });
-
-    const resetPlayer = async () => {
+    // --- CAMBIO 1: Modificamos resetPlayer para que acepte un modo "silencioso" ---
+    const resetPlayer = async (isSilent = false) => {
         try {
-            await TrackPlayer.stop();
-            await TrackPlayer.reset();
+            console.log('🔄 Reiniciando el reproductor...');
+            userInitiatedPause.current = false;
+            await TrackPlayer.reset(); // Usar reset en lugar de stop, es más completo
             await TrackPlayer.add(tracks);
+            // Al resetear, saltamos a la pista actual que el usuario estaba escuchando
+            await TrackPlayer.skip(tracks[currentTrackIndex].id);
             setMenuVisible(false);
-            retryCount.current = 0; // Reiniciar contador de reintentos al resetear
-            autoRetryEnabled.current = true; // Volver a habilitar los reintentos al resetear
-            Alert.alert('Reproductor reiniciado', 'Se ha reiniciado el reproductor de radio.');
+            retryCount.current = 0;
+            if (!isSilent) {
+                Alert.alert('Reproductor reiniciado', 'Se ha reiniciado el reproductor de radio.');
+            }
         } catch (error) {
             console.error('❌ Error al resetear el reproductor:', error);
-            Alert.alert('Error', 'Ocurrió un error al intentar reiniciar el reproductor.');
+            if (!isSilent) {
+                Alert.alert('Error', 'Ocurrió un error al intentar reiniciar el reproductor.');
+            }
         }
     };
 
+    const handleRetry = () => {
+        if (retryCount.current < maxRetries) {
+            const delay = retryDelayBase * Math.pow(2, retryCount.current);
+            console.log(`⚠️ Conexión perdida, reintentando en ${delay / 1000} segundos...`);
+            Alert.alert('Reintentando conexión', `Se perdió la conexión. Intentando reconectar...`);
+            setTimeout(() => {
+                TrackPlayer.play();
+                retryCount.current += 1;
+            }, delay);
+        } else {
+            console.log('🛑 Demasiados reintentos, deteniendo la reproducción.');
+            Alert.alert('❌ Error de conexión', 'No se pudo reanudar la reproducción. Por favor, verifica tu conexión.');
+        }
+    };
+
+    useTrackPlayerEvents([Event.PlaybackState, Event.PlaybackError], (event) => {
+        if (event.type === Event.PlaybackState) {
+            const state = event.state;
+            setIsLoading(state === State.Buffering || state === State.Connecting);
+            setIsPlaying(state === State.Playing);
+
+            if (state === State.Playing || state === State.Paused || state === State.Stopped) {
+                if (bufferingTimeout.current) {
+                    clearTimeout(bufferingTimeout.current);
+                    bufferingTimeout.current = null;
+                }
+                if (state === State.Playing) {
+                    retryCount.current = 0;
+                }
+            }
+            if (state === State.Buffering || state === State.Connecting) {
+                if (bufferingTimeout.current) return;
+                bufferingTimeout.current = setTimeout(() => {
+                    TrackPlayer.getState().then(currentState => {
+                        if (currentState === State.Buffering || currentState === State.Connecting) {
+                            handleRetry();
+                        }
+                    });
+                }, 15000);
+            }
+            if (state === State.Paused && userInitiatedPause.current) {
+                console.log('⏸️ Pausa intencional del usuario.');
+                userInitiatedPause.current = false;
+            }
+        } else if (event.type === Event.PlaybackError) {
+            console.error('❌ Error de reproducción:', event.error);
+            handleRetry();
+        }
+    });
+
     useEffect(() => {
-        const setup = async () => {
+        const initialize = async () => {
             try {
                 const isSetup = await TrackPlayer.isServiceRunning();
                 if (!isSetup) {
-                    console.log('🎵 Configurando TrackPlayer...');
                     await setupPlayer();
-                } else {
-                    console.log('✅ TrackPlayer ya estaba configurado.');
                 }
-
-                console.log('🎵 Agregando pista:', tracks);
                 await TrackPlayer.reset();
                 await TrackPlayer.add(tracks);
                 setIsReady(true);
-                console.log('✅ Pista añadida con éxito.');
+                const netInfoState = await Netinfo.fetch();
+                wasConnected.current = netInfoState.isConnected;
             } catch (error) {
-                console.error('❌ Error al configurar TrackPlayer:', error);
-                Alert.alert('Error de configuración', 'Ocurrió un error al configurar el reproductor de radio.');
+                console.error('❌ Error al configurar el reproductor:', error);
             }
         };
+        initialize();
 
-        setup();
+        // --- CAMBIO 2: La lógica de reconexión ahora resetea el reproductor ---
+        const unsubscribeNetInfo = Netinfo.addEventListener(state => {
+            const isNowConnected = state.isConnected;
+            if (!wasConnected.current && isNowConnected) {
+                console.log('✅ La conexión a internet ha vuelto.');
+                Alert.alert("Conexión Restaurada", "Reiniciando la radio para reconectar...");
+                
+                setTimeout(async () => {
+                    const currentState = await TrackPlayer.getState();
+                    if (currentState !== State.Playing && !userInitiatedPause.current) {
+                        console.log('🔄 Reiniciando y reanudando la reproducción automáticamente...');
+                        await resetPlayer(true); // Reset silencioso
+                        await TrackPlayer.play(); // Iniciar reproducción después del reset
+                    }
+                }, 2000); // Un pequeño retraso para que la red se estabilice
+            }
+            wasConnected.current = isNowConnected;
+        });
 
         return () => {
-            console.log('⛔ App cerrada: Deteniendo TrackPlayer...');
-            TrackPlayer.stop();
+            unsubscribeNetInfo();
             TrackPlayer.reset();
-            autoRetryEnabled.current = true; // Asegurar que se reinicie al desmontar
         };
     }, []);
+
 
     const togglePlayback = async () => {
         const currentState = await TrackPlayer.getState();
         try {
             if (currentState === State.Playing) {
+                userInitiatedPause.current = true;
                 await TrackPlayer.pause();
             } else {
+                userInitiatedPause.current = false;
                 setIsLoading(true);
+                retryCount.current = 0;
                 await TrackPlayer.play();
             }
-            retryCount.current = 0; // Reiniciar contador al interactuar manualmente
-            autoRetryEnabled.current = true; // Volver a habilitar los reintentos al interactuar
         } catch (error) {
             console.error('❌ Error al controlar la reproducción:', error);
-            Alert.alert('Error de reproducción', 'Ocurrió un error al intentar pausar o reproducir la radio.');
         }
     };
 
     const playNext = async () => {
         if (currentTrackIndex < tracks.length - 1) {
             try {
+                userInitiatedPause.current = false;
                 const nextIndex = currentTrackIndex + 1;
-                setCurrentTrackIndex(nextIndex);
+                await resetPlayer(true); // Reseteamos para asegurar una carga limpia
                 await TrackPlayer.skip(tracks[nextIndex].id);
                 await TrackPlayer.play();
-                retryCount.current = 0; // Reiniciar contador al cambiar de pista
-                autoRetryEnabled.current = true; // Volver a habilitar los reintentos al interactuar
+                setCurrentTrackIndex(nextIndex); // Actualizamos el índice después del skip
+                retryCount.current = 0;
             } catch (error) {
                 console.error('❌ Error al ir a la siguiente emisora:', error);
-                Alert.alert('Error', 'Ocurrió un error al intentar cambiar a la siguiente emisora.');
             }
         }
     };
@@ -252,15 +203,15 @@ const AudioPlayer = () => {
     const playPrevious = async () => {
         if (currentTrackIndex > 0) {
             try {
+                userInitiatedPause.current = false;
                 const prevIndex = currentTrackIndex - 1;
-                setCurrentTrackIndex(prevIndex);
+                await resetPlayer(true); // Reseteamos para asegurar una carga limpia
                 await TrackPlayer.skip(tracks[prevIndex].id);
                 await TrackPlayer.play();
-                retryCount.current = 0; // Reiniciar contador al cambiar de pista
-                autoRetryEnabled.current = true; // Volver a habilitar los reintentos al interactuar
+                setCurrentTrackIndex(prevIndex); // Actualizamos el índice después del skip
+                retryCount.current = 0;
             } catch (error) {
                 console.error('❌ Error al ir a la emisora anterior:', error);
-                Alert.alert('Error', 'Ocurrió un error al intentar cambiar a la emisora anterior.');
             }
         }
     };
@@ -269,7 +220,7 @@ const AudioPlayer = () => {
         if (isNaN(seconds)) return "00:00";
         const mins = Math.floor(seconds / 60);
         const secs = Math.floor(seconds % 60);
-        return `<span class="math-inline">\{String\(mins\)\.padStart\(2, '0'\)\}\:</span>{String(secs).padStart(2, '0')}`;
+        return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
     };
 
     const shareDataPlayStore = async () => {
@@ -294,9 +245,9 @@ const AudioPlayer = () => {
                 <ScrollView
                     contentContainerStyle={{
                         flexGrow: 1,
-                        justifyContent: 'center',
+                        justifyContent: 'flex-start',
                         alignItems: 'center',
-                        paddingVertical: 24, // puedes ajustar el padding
+                        paddingVertical: 70, // puedes ajustar el padding
                     }}
                     showsVerticalScrollIndicator={false}
                 >
@@ -396,7 +347,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     albumArt: {
-        marginTop: 55,
+        marginTop: 65,
         width: 300,
         height: 300,
         borderRadius: 10,
@@ -472,6 +423,7 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     menuButton: {
+        margin: 10,
         position: "absolute",
         right: 15,
         zIndex: 10,

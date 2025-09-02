@@ -39,20 +39,18 @@ const PlayerScreen = () => {
   
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
-      <ScrollView>
-      <AudioPlayer track={track} />
-      </ScrollView>
-    </SafeAreaView>
+    // Usamos ScrollView como el componente principal
+    <ScrollView contentContainerStyle={styles.scrollContainer}>
+      <AudioPlayer />
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 60,
+  scrollContainer: {
+    // Esta es la propiedad clave:
+    // Le dice al contenido que crezca para ocupar todo el espacio vertical disponible.
+    flexGrow: 1, 
   },
 });
 
